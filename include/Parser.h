@@ -58,6 +58,8 @@ public:
 	vector<string> generics;
 	vector<pair<uint64_t, Base*> > bound;
 	
+	map<uint64_t, Field*> constants;
+	
 	string full_name() {
 		return package + "." + name;
 	}
@@ -103,6 +105,33 @@ public:
 class Short : public Primitive {
 public:
 	static const uint64_t HASH = hash64("short");
+	virtual uint64_t get_hash() override { return HASH; }
+};
+class Int : public Primitive {
+public:
+	static const uint64_t HASH = hash64("int");
+	virtual uint64_t get_hash() override { return HASH; }
+};
+class Long : public Primitive {
+public:
+	static const uint64_t HASH = hash64("long");
+	virtual uint64_t get_hash() override { return HASH; }
+};
+class Float : public Primitive {
+public:
+	static const uint64_t HASH = hash64("float");
+	virtual uint64_t get_hash() override { return HASH; }
+};
+class Double : public Primitive {
+public:
+	static const uint64_t HASH = hash64("double");
+	virtual uint64_t get_hash() override { return HASH; }
+};
+
+class Binary : public Primitive {
+public:
+	Binary() { isintegral = false; }
+	static const uint64_t HASH = hash64("Binary");
 	virtual uint64_t get_hash() override { return HASH; }
 };
 
@@ -198,14 +227,13 @@ public:
 class Type : public Base {
 public:
 	map<uint64_t, Field*> fields;
-	map<uint64_t, Field*> constants;
-	map<uint64_t, Method*> methods;
 	
 };
 
 
-class Interface : public Type {
+class Interface : public Base {
 public:
+	map<uint64_t, Method*> methods;
 	
 };
 
@@ -344,6 +372,9 @@ public:
 					/*
 					 * METHOD
 					 */
+					if(!this_iface) {
+						return error("invalid method definition");
+					}
 					Method* func = new Method;
 					CRC64 unique_hash;
 					unique_hash.update(name);
@@ -373,10 +404,10 @@ public:
 					func->generics = tmpl;
 					func->bound = bound;
 					
-					if(!this_type->methods.count(unique_hash.getValue())) {
-						this_type->methods[unique_hash] = func;
+					if(!this_iface->methods.count(unique_hash.getValue())) {
+						this_iface->methods[unique_hash] = func;
 					} else {
-						return error("redefinition of " + name);
+						return error("invalid re-definition of " + name);
 					}
 				} else {
 					/*
@@ -412,7 +443,7 @@ public:
 					if(!this_type->fields.count(unique_hash)) {
 						this_type->fields[unique_hash] = field;
 					} else {
-						return error("redefinition of " + name);
+						return error("invalid re-definition of " + name);
 					}
 				}
 			} else {

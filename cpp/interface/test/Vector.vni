@@ -1,0 +1,13 @@
+package test;
+
+class Vector3<T> {
+	T data[3];
+}
+
+typedef Vector3<double> Vector3d;
+
+class Test {
+	Vector3d vec;
+	Vector3d vec2 = null;
+	float vec3[3];
+}

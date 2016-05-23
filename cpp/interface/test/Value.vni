@@ -1,0 +1,7 @@
+package test;
+
+class Value {
+	int x;
+	int y;
+	int z;
+}

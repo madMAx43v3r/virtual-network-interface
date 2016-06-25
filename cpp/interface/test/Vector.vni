@@ -1,13 +1,17 @@
 package test;
 
-class Vector3<T> {
+import test.Value;
+import test.value_t;
+
+struct Vector3<T> {
 	T data[3];
 }
 
-typedef Vector3<double> Vector3d;
+typedef Vector3<Value> ValueVector3;
+typedef Vector3<value_t> value_vector3;
 
-class Test {
-	Vector3d vec;
+class TestType {
+	ValueVector3 vec;
 	Vector3d vec2 = null;
 	float vec3[3];
 }

@@ -14,123 +14,146 @@
 using namespace std;
 
 
+map<uint64_t, string> 		NAMES;
+map<uint64_t, Base*> 		INDEX;
+
+
+uint64_t hash64(const std::string& str) {
+	CRC64 hash;
+	hash.update(str.c_str(), str.size());
+	uint64_t val = hash.getValue();
+	NAMES[val] = str;
+	return val;
+}
+
+
 class Base {
 public:
 	Base() {}
-	
 	virtual ~Base() {}
 	
-	string package;
-	string name;
-	
-	Base* super = 0;
-	uint64_t super_hash = 0;
-	vector<string> super_generics;
-	vector<pair<uint64_t, Base*> > super_bound;
-	
-	bool isextern = false;
-	bool isgeneric = false;
-	vector<string> generics;
-	vector<pair<uint64_t, Base*> > bound;
-	
-	map<uint64_t, Field*> constants;
-	
-	string full_name() {
-		return package + "." + name;
-	}
+	virtual string get_name() = 0;
+	virtual string get_full_name() = 0;
 	
 	virtual uint64_t get_hash() {
-		string str = full_name();
-		if(!isgeneric && bound.size()) {
-			std::ostringstream ss;
-			ss << "<";
-			int i = 0;
-			for(auto& param : bound) {
-				ss << NAMES[param.first];
-				if(i < bound.size()-1) {
-					ss << ",";
-				}
-				i++;
-			}
-			ss << ">";
-		}
-		uint64_t val = hash64(str);
-		NAMES[val] = str;
-		return val;
+		return hash64(get_full_name());
 	}
 	
+};
+
+
+class Ref {
+public:
+	Base* type = 0;
+	uint64_t hash = 0;
+	string name;
+	vector<Ref> tmpl;
+	
+	string get_name() {
+		return type->get_name();
+	}
+	string get_full_name() {
+		return type->get_full_name();
+	}
 };
 
 
 class Primitive : public Base {
+	
+};
+
+class Integer : public Primitive {
 public:
-	bool isintegral = true;
-	uint64_t class_hash = 0;
+	int size = 0;
+	virtual string get_name() { return "Integer"; }
+	virtual string get_full_name() { return "vni.Integer"; }
+};
+
+class Real : public Primitive {
+public:
+	int size = 0;
+	virtual string get_name() { return "Real"; }
+	virtual string get_full_name() { return "vni.Real"; }
 };
 
 class Bool : public Primitive {
 public:
-	Bool() { class_hash = HASH; }
 	static const uint64_t HASH = hash64("bool");
-	virtual uint64_t get_hash() override { return HASH; }
+	virtual string get_name() { return "bool"; }
+	virtual string get_full_name() { return get_name(); }
+	virtual uint64_t get_hash() { return HASH; }
 };
 
-class Char : public Primitive {
+class Char : public Integer {
 public:
-	Char() { class_hash = hash64("vnl_integer"); }
+	Char() { size = 1; }
 	static const uint64_t HASH = hash64("char");
-	virtual uint64_t get_hash() override { return HASH; }
+	virtual string get_name() { return "char"; }
+	virtual string get_full_name() { return get_name(); }
+	virtual uint64_t get_hash() { return HASH; }
 };
 
-class Short : public Primitive {
+class Short : public Integer {
 public:
-	Short() { class_hash = hash64("vnl_integer"); }
+	Short() { size = 2; }
 	static const uint64_t HASH = hash64("short");
-	virtual uint64_t get_hash() override { return HASH; }
+	virtual string get_name() { return "short"; }
+	virtual string get_full_name() { return get_name(); }
+	virtual uint64_t get_hash() { return HASH; }
 };
 
-class Int : public Primitive {
+class Int : public Integer {
 public:
-	Int() { class_hash = hash64("vnl_integer"); }
+	Int() { size = 4; }
 	static const uint64_t HASH = hash64("int");
-	virtual uint64_t get_hash() override { return HASH; }
+	virtual string get_name() { return "int"; }
+	virtual string get_full_name() { return get_name(); }
+	virtual uint64_t get_hash() { return HASH; }
 };
 
-class Long : public Primitive {
+class Long : public Integer {
 public:
-	Long() { class_hash = hash64("vnl_integer"); }
+	Long() { size = 8; }
 	static const uint64_t HASH = hash64("long");
-	virtual uint64_t get_hash() override { return HASH; }
+	virtual string get_name() { return "long"; }
+	virtual string get_full_name() { return get_name(); }
+	virtual uint64_t get_hash() { return HASH; }
 };
 
-class Float : public Primitive {
+class Float : public Real {
 public:
-	Float() { class_hash = hash64("vnl_real"); }
+	Float() { size = 4; }
 	static const uint64_t HASH = hash64("float");
-	virtual uint64_t get_hash() override { return HASH; }
+	virtual string get_name() { return "float"; }
+	virtual string get_full_name() { return get_name(); }
+	virtual uint64_t get_hash() { return HASH; }
 };
 
-class Double : public Primitive {
+class Double : public Real {
 public:
-	Double() { class_hash = hash64("vnl_real"); }
+	Double() { size = 8; }
 	static const uint64_t HASH = hash64("double");
-	virtual uint64_t get_hash() override { return HASH; }
+	virtual string get_name() { return "double"; }
+	virtual string get_full_name() { return get_name(); }
+	virtual uint64_t get_hash() { return HASH; }
 };
 
 
 class Array : public Base {
 public:
-	Base* type = 0;
-	uint64_t type_hash = 0;
+	Ref type;
 	int size = 0;
 	
-	virtual uint64_t get_hash() override {
+	virtual string get_name() {
 		std::ostringstream ss;
-		ss << NAMES[type_hash] << "[" << size << "]";
-		string str = ss.str();
-		uint64_t val = hash64(str);
-		NAMES[val] = str;
-		return val;
+		ss << type.get_name() << "[" << size << "]";
+		return ss.str();
+	}
+	
+	virtual string get_full_name() {
+		std::ostringstream ss;
+		ss << type.get_full_name() << "[" << size << "]";
+		return ss.str();
 	}
 	
 };
@@ -139,14 +162,18 @@ public:
 class Binary : public Base {
 public:
 	static const uint64_t HASH = hash64("Binary");
-	virtual uint64_t get_hash() override { return HASH; }
+	virtual string get_name() { return "Binary"; }
+	virtual string get_full_name() { return get_name(); }
+	virtual uint64_t get_hash() { return HASH; }
 };
 
 
 class String : public Base {
 public:
 	static const uint64_t HASH = hash64("String");
-	virtual uint64_t get_hash() override { return HASH; }
+	virtual string get_name() { return "String"; }
+	virtual string get_full_name() { return get_name(); }
+	virtual uint64_t get_hash() { return HASH; }
 };
 
 
@@ -169,33 +196,20 @@ public:
 };
 
 
-class Enum : public Base {
-public:
-	map<uint32_t, string> values;
-	
-	uint32_t get_value_hash(string ident) {
-		return hash64(full_name() + "." + ident);
-	}
-	
-};
-
-
 class Field : public Base {
 public:
-	Base* type = 0;
-	uint64_t type_hash = 0;
+	Ref type;
+	string name;
 	
 	bool isnull = false;
 	string value;
 	
-	uint64_t get_unique_hash() {
-		return hash64(name);
-	}
+	virtual string get_name() { return name; }
+	virtual string get_full_name() { return get_name(); }
 	
 	virtual uint64_t get_hash() override {
 		CRC64 hash;
-		hash.update(package);
-		hash.update(type_hash);
+		hash.update(type.hash);
 		hash.update(name);
 		for(auto entry : bound) {
 			hash.update(entry.first);
@@ -208,8 +222,8 @@ public:
 
 class Param : public Base {
 public:
-	Base* type = 0;
-	uint64_t type_hash = 0;
+	Ref type;
+	string name;
 };
 
 class Method : public Base {
@@ -248,41 +262,88 @@ public:
 };
 
 
-class Typedef : public Base {
-public:
-	Base* type = 0;
-	uint64_t type_hash = 0;
-};
-
-
 class Type : public Base {
 public:
-	map<uint64_t, Field*> fields;
+	string package;
+	string name;
 	
-	bool add_field(Field* field) {
-		uint64_t hash = field->get_unique_hash();
-		if(!fields.count(hash)) {
-			fields[hash] = field;
-			return true;
+	bool isextern = false;
+	bool isgeneric = false;
+	vector<string> generics;
+	vector<Ref> tmpl;
+	
+	virtual string get_full_name() {
+		string str = package + "." + name;
+		if(tmpl.size()) {
+			str += "<";
+			for(int i = 0; i < tmpl.size(); ++i) {
+				
+				if(i < tmpl.size()-1) {
+					str += ",";
+				}
+			}
+			str += ">";
 		}
-		return false;
+		return str;
+	}
+	
+	virtual uint64_t get_hash() {
+		string str = full_name();
+		if(!isgeneric && bound.size()) {
+			std::ostringstream ss;
+			ss << "<";
+			int i = 0;
+			for(auto& param : bound) {
+				ss << NAMES[param.hash];
+				if(i < bound.size()-1) {
+					ss << ",";
+				}
+				i++;
+			}
+			ss << ">";
+		}
+		uint64_t val = hash64(str);
+		NAMES[val] = str;
+		return val;
 	}
 	
 };
 
 
-class Interface : public Base {
+class Typedef : public Type {
 public:
-	map<uint64_t, Method*> methods;
+	Ref type;
+	string name;
+};
+
+
+class Enum : public Type {
+public:
+	vector<string> values;
 	
-	bool add_method(Method* method) {
-		uint64_t hash = method->get_unique_hash();
-		if(!methods.count(hash)) {
-			methods[hash] = method;
-			return true;
-		}
-		return false;
-	}
+};
+
+
+class Struct : public Type {
+public:
+	
+};
+
+
+class Class : public Type {
+public:
+	Ref super;
+	
+	vector<Field*> constants;
+	vector<Field*> fields;
+	
+};
+
+
+class Interface : public Class {
+public:
+	vector<Method*> methods;
+	
 	
 };
 

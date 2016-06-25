@@ -11,13 +11,6 @@
 #include "AST.h"
 
 
-map<uint64_t, string> 		NAMES;
-map<uint64_t, Base*> 		INDEX;
-map<uint64_t, Typedef*> 	TYPEDEFS;
-map<uint64_t, Type*> 		TYPES;
-map<uint64_t, Interface*> 	INTERFACES;
-
-
 struct init_type_system {
 	init_type_system() {
 		INDEX[Bool::HASH] = new Bool();
@@ -50,12 +43,6 @@ vector<string> split(const std::string& s, char delim) {
         elems.push_back(item);
     }
     return elems;
-}
-
-uint64_t hash64(const std::string& str) {
-	CRC64 hash;
-	hash.update(str.c_str(), str.size());
-	return hash.getValue();
 }
 
 

@@ -5,3 +5,9 @@ class Value {
 	int y;
 	int z;
 }
+
+struct value_t {
+	int x;
+	int y;
+	int z;
+}

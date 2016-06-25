@@ -11,31 +11,7 @@
 #include "AST.h"
 
 
-struct init_type_system {
-	init_type_system() {
-		INDEX[Bool::HASH] = new Bool();
-		INDEX[Char::HASH] = new Char();
-		INDEX[Short::HASH] = new Short();
-		INDEX[Int::HASH] = new Int();
-		INDEX[Long::HASH] = new Long();
-		INDEX[Float::HASH] = new Float();
-		INDEX[Double::HASH] = new Double();
-		INDEX[Binary::HASH] = new Binary();
-		INDEX[String::HASH] = new String();
-		
-		for(int i = 0; i < 10; ++i) {
-			uint64_t hash = TmplType::get_index_hash(i);
-			TmplType* type = new TmplType();
-			type->index = i;
-			INDEX[hash] = type;
-		}
-	}
-};
-
-init_type_system init_type_system_;
-
-
-vector<string> split(const std::string& s, char delim) {
+inline vector<string> split(const std::string& s, char delim) {
     std::vector<std::string> elems;
     std::stringstream ss(s);
     std::string item;

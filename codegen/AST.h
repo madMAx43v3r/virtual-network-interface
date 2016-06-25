@@ -11,14 +11,28 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <iostream>
+
+#include "CRC64.h"
+
+
 using namespace std;
 
+class Package;
+class Type;
 
-map<uint64_t, string> 		NAMES;
-map<uint64_t, Base*> 		INDEX;
+
+static map<uint64_t, string> NAMES;
+static map<uint64_t, Base*> INDEX;
+
+static string FILE = "<unknown>";
+static string LINE = -1;
+
+static Package* PACKAGE = 0;
+static Type* TYPE = 0;
 
 
-uint64_t hash64(const std::string& str) {
+inline uint64_t hash64(const std::string& str) {
 	CRC64 hash;
 	hash.update(str.c_str(), str.size());
 	uint64_t val = hash.getValue();
@@ -26,11 +40,28 @@ uint64_t hash64(const std::string& str) {
 	return val;
 }
 
+inline void die() {
+	die(FILE, LINE);
+}
+
+inline void die(string file, string line) {
+	std::cout << "In " << file << ":" << line << std::endl;
+	exit(-1);
+}
+
 
 class Base {
 public:
-	Base() {}
+	string file;
+	string line;
+	
+	Base() {
+		file = FILE;
+		line = LINE;
+	}
 	virtual ~Base() {}
+	
+	virtual Base* get() { return this; }
 	
 	virtual string get_name() = 0;
 	virtual string get_full_name() = 0;
@@ -39,181 +70,144 @@ public:
 		return hash64(get_full_name());
 	}
 	
-};
-
-
-class Ref {
-public:
-	Base* type = 0;
-	uint64_t hash = 0;
-	string name;
-	vector<Ref> tmpl;
+	virtual bool check() { return true; }
 	
-	string get_name() {
-		return type->get_name();
+};
+
+
+class Package : public Base {
+public:
+	string name;
+	map<string, Base*> index;
+	
+	Package(string name) : name(name) {}
+	
+	void add(Base* type) {
+		index[type->get_name()] = type;
 	}
-	string get_full_name() {
-		return type->get_full_name();
+	
+	string get_name() {	return name; }
+	string get_full_name() { return name; }
+	
+	static Package* get(string name) {
+		uint64_t hash = hash64(name);
+		Package* res = INDEX[hash];
+		if(!res) {
+			res = new Package(name);
+			INDEX[hash] = res;
+		}
+		return res;
 	}
 };
 
+
+class Import : public Base {
+public:
+	Package* package;
+	string name;
+	
+	Import(string package_, string name_) {
+		package = Package::get(package_);
+		name = name_;
+	}
+	
+	string get_name() {	return name; }
+	string get_full_name() { return package->name + "." + name; }
+	
+	virtual Base* get() {
+		Base* res = package->index[name];
+		if(!res) {
+			std::cout << "Unable to import: " << name << " from " << package->name << std::endl;
+			die(file, line);
+		}
+		return res;
+	}
+};
+
+
+class Extern : public Base {
+public:
+	string package;
+	string name;
+	
+	Extern(string package_, string name_) {
+		package = package_;
+		name = name_;
+	}
+};
+
+
+enum {
+	BYTE = 1, WORD = 2, DWORD = 4, QWORD = 8
+};
 
 class Primitive : public Base {
 	
 };
 
+class Bool : public Primitive {
+public:
+	virtual string get_name() { return "bool"; }
+	virtual string get_full_name() { return "bool"; }
+};
+
 class Integer : public Primitive {
 public:
+	string name;
 	int size = 0;
-	virtual string get_name() { return "Integer"; }
-	virtual string get_full_name() { return "vni.Integer"; }
+	
+	Integer(string name, int size) : name(name), size(size) {}
+	
+	virtual string get_name() { return name; }
+	virtual string get_full_name() { return name; }
+	virtual uint64_t get_hash() { return hash64("vni.AST.Integer"); }
 };
 
 class Real : public Primitive {
 public:
+	string name;
 	int size = 0;
-	virtual string get_name() { return "Real"; }
-	virtual string get_full_name() { return "vni.Real"; }
+	
+	Real(string name, int size) : name(name), size(size) {}
+	
+	virtual string get_name() { return name; }
+	virtual string get_full_name() { return name; }
+	virtual uint64_t get_hash() { return hash64("vni.AST.Real"); }
 };
 
-class Bool : public Primitive {
+class Array : public Primitive {
 public:
-	static const uint64_t HASH = hash64("bool");
-	virtual string get_name() { return "bool"; }
-	virtual string get_full_name() { return get_name(); }
-	virtual uint64_t get_hash() { return HASH; }
-};
-
-class Char : public Integer {
-public:
-	Char() { size = 1; }
-	static const uint64_t HASH = hash64("char");
-	virtual string get_name() { return "char"; }
-	virtual string get_full_name() { return get_name(); }
-	virtual uint64_t get_hash() { return HASH; }
-};
-
-class Short : public Integer {
-public:
-	Short() { size = 2; }
-	static const uint64_t HASH = hash64("short");
-	virtual string get_name() { return "short"; }
-	virtual string get_full_name() { return get_name(); }
-	virtual uint64_t get_hash() { return HASH; }
-};
-
-class Int : public Integer {
-public:
-	Int() { size = 4; }
-	static const uint64_t HASH = hash64("int");
-	virtual string get_name() { return "int"; }
-	virtual string get_full_name() { return get_name(); }
-	virtual uint64_t get_hash() { return HASH; }
-};
-
-class Long : public Integer {
-public:
-	Long() { size = 8; }
-	static const uint64_t HASH = hash64("long");
-	virtual string get_name() { return "long"; }
-	virtual string get_full_name() { return get_name(); }
-	virtual uint64_t get_hash() { return HASH; }
-};
-
-class Float : public Real {
-public:
-	Float() { size = 4; }
-	static const uint64_t HASH = hash64("float");
-	virtual string get_name() { return "float"; }
-	virtual string get_full_name() { return get_name(); }
-	virtual uint64_t get_hash() { return HASH; }
-};
-
-class Double : public Real {
-public:
-	Double() { size = 8; }
-	static const uint64_t HASH = hash64("double");
-	virtual string get_name() { return "double"; }
-	virtual string get_full_name() { return get_name(); }
-	virtual uint64_t get_hash() { return HASH; }
-};
-
-
-class Array : public Base {
-public:
-	Ref type;
+	Base* type;
 	int size = 0;
 	
 	virtual string get_name() {
 		std::ostringstream ss;
-		ss << type.get_name() << "[" << size << "]";
+		ss << type->get_name() << "[" << size << "]";
 		return ss.str();
 	}
-	
 	virtual string get_full_name() {
 		std::ostringstream ss;
-		ss << type.get_full_name() << "[" << size << "]";
+		ss << type->get_full_name() << "[" << size << "]";
 		return ss.str();
-	}
-	
-};
-
-
-class Binary : public Base {
-public:
-	static const uint64_t HASH = hash64("Binary");
-	virtual string get_name() { return "Binary"; }
-	virtual string get_full_name() { return get_name(); }
-	virtual uint64_t get_hash() { return HASH; }
-};
-
-
-class String : public Base {
-public:
-	static const uint64_t HASH = hash64("String");
-	virtual string get_name() { return "String"; }
-	virtual string get_full_name() { return get_name(); }
-	virtual uint64_t get_hash() { return HASH; }
-};
-
-
-class TmplType : public Base {
-public:
-	int index = -1;
-	
-	static uint64_t get_index_hash(int index) {
-		std::ostringstream ss;
-		ss << "Tmpl_" << index;
-		string str = ss.str();
-		uint64_t val = hash64(str);
-		NAMES[val] = str;
-		return val;
-	}
-	
-	virtual uint64_t get_hash() override {
-		return get_index_hash(index);
 	}
 };
 
 
 class Field : public Base {
 public:
-	Ref type;
+	Base* type;
 	string name;
 	
 	bool isnull = false;
 	string value;
 	
 	virtual string get_name() { return name; }
-	virtual string get_full_name() { return get_name(); }
+	virtual string get_full_name() { return type->get_full_name() + " " + name; }
 	
-	virtual uint64_t get_hash() override {
+	virtual uint64_t get_hash() {
 		CRC64 hash;
-		hash.update(type.hash);
+		hash.update(type->get_hash());
 		hash.update(name);
-		for(auto entry : bound) {
-			hash.update(entry.first);
-		}
 		return hash.getValue();
 	}
 	
@@ -222,127 +216,149 @@ public:
 
 class Param : public Base {
 public:
-	Ref type;
+	Base* type;
 	string name;
+	
+	virtual string get_name() { return name; }
+	virtual string get_full_name() { return type->get_full_name() + " " + name; }
+	virtual uint64_t get_hash() { return type->get_hash(); }
 };
+
 
 class Method : public Base {
 public:
-	Base* type = 0;
-	uint64_t type_hash = 0;
-	
+	Base* type;
+	string name;
 	vector<Param*> params;
 	
-	uint64_t get_unique_hash() {
+	virtual string get_name() { return name; }
+	virtual string get_full_name() {
+		string str = type->get_name() + " " + name + "(";
+		for(int i = 0; i < params.size(); ++i) {
+			str += params[i]->type->get_full_name();
+			if(i < params.size()-1) {
+				str += ", ";
+			}
+		}
+		return str + ")";
+	}
+	
+	virtual uint64_t get_hash() {
 		CRC64 hash;
 		hash.update(name);
 		for(Param* param : params) {
-			hash.update(param->type_hash);
-			for(auto entry : param->bound) {
-				hash.update(entry.first);
-			}
+			hash.update(param->type->get_hash());
 		}
 		return hash.getValue();
 	}
-	
-	virtual uint64_t get_hash() override {
-		CRC64 hash;
-		hash.update(package);
-		hash.update(type_hash);
-		hash.update(name);
-		for(Param* param : params) {
-			hash.update(param->type_hash);
-			for(auto entry : param->bound) {
-				hash.update(entry.first);
-			}
-		}
-		return hash.getValue();
-	}
-	
 };
 
 
 class Type : public Base {
 public:
-	string package;
+	Package* package;
 	string name;
 	
-	bool isextern = false;
-	bool isgeneric = false;
-	vector<string> generics;
-	vector<Ref> tmpl;
+	map<string, Base*> index;
 	
-	virtual string get_full_name() {
-		string str = package + "." + name;
-		if(tmpl.size()) {
-			str += "<";
-			for(int i = 0; i < tmpl.size(); ++i) {
-				
-				if(i < tmpl.size()-1) {
-					str += ",";
-				}
-			}
-			str += ">";
-		}
-		return str;
+	Type(string name) : name(name) {
+		package = PACKAGE;
+		package->index[name] = this;
 	}
 	
-	virtual uint64_t get_hash() {
-		string str = full_name();
-		if(!isgeneric && bound.size()) {
-			std::ostringstream ss;
-			ss << "<";
-			int i = 0;
-			for(auto& param : bound) {
-				ss << NAMES[param.hash];
-				if(i < bound.size()-1) {
-					ss << ",";
-				}
-				i++;
-			}
-			ss << ">";
-		}
-		uint64_t val = hash64(str);
-		NAMES[val] = str;
-		return val;
+	void add(Base* type) {
+		index[type->get_name()] = type;
 	}
 	
+	virtual string get_name() { return name; }
+	virtual string get_full_name() { return package->get_full_name() + "." + name; }
 };
 
 
 class Typedef : public Type {
 public:
-	Ref type;
-	string name;
+	Base* type;
+	
 };
 
 
-class Enum : public Type {
+class Enum : public Base {
 public:
+	Type* type;
 	vector<string> values;
 	
+	Enum() {
+		type = TYPE;
+	}
 };
 
 
 class Struct : public Type {
 public:
-	
-};
-
-
-class Class : public Type {
-public:
-	Ref super;
-	
 	vector<Field*> constants;
 	vector<Field*> fields;
 	
 };
 
 
+class Class : public Struct {
+public:
+	Base* super;
+	
+};
+
+
 class Interface : public Class {
 public:
+	vector<string> params;
 	vector<Method*> methods;
+	
+	Interface() {
+		
+	}
+	
+	virtual string get_name() {
+		string str = name;
+		if(params.size()) {
+			str += "<";
+			for(int i = 0; i < params.size(); ++i) {
+				str += params[i];
+				if(i < params.size()-1) {
+					str += ", ";
+				}
+			}
+			str += ">";
+		}
+		return str;
+	}
+};
+
+
+class Instance : public Base {
+public:
+	Base* type = 0;
+	vector<Type*> params;
+	
+};
+
+
+class TmplType : public Base {
+public:
+	Interface* type;
+	string name;
+	
+	TmplType(Interface* type, string name) : type(type), name(name) {
+		type->params.push_back(name);
+		type->index[name] = this;
+	}
+	
+	virtual string get_name() { return name; }
+	virtual string get_full_name() { return type->get_full_name() + "::" + name; }
+};
+
+
+class Object : public Interface {
+public:
 	
 	
 };
@@ -350,7 +366,47 @@ public:
 
 
 
+static Base* resolve(const string& ident) {
+	Base* res = INDEX[hash64(ident)];
+	if(!res && PACKAGE) {
+		res = PACKAGE->index[ident];
+	}
+	if(!res && TYPE) {
+		res = TYPE->index[ident];
+	}
+	if(!res) {
+		int pos = ident.find_last_of('.');
+		if(pos != std::string::npos) {
+			string package = ident.substr(0, pos);
+			string name = ident.substr(pos+1);
+			res = new Import(package, name);
+		}
+	}
+	if(!res) {
+		std::cout << "Unable to resolve: " << ident << std::endl;
+		die();
+	}
+	return res;
+}
 
+
+
+struct init_type_system {
+	init_type_system() {
+		add(new Bool());
+		add(new Integer("char", 1));
+		add(new Integer("short", 2));
+		add(new Integer("int", 4));
+		add(new Integer("long", 8));
+		add(new Real("float", 4));
+		add(new Real("double", 8));
+	}
+	void add(Base* type) {
+		INDEX[type->get_name()] = type;
+	}
+};
+
+static init_type_system init_type_system_;
 
 
 

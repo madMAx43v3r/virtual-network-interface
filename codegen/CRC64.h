@@ -10,6 +10,7 @@
 
 #include <stdint.h>
 #include <limits.h>
+#include <string>
 
 
 class CRC64 {
@@ -17,6 +18,10 @@ public:
 	
 	CRC64() {
 		crc = -1;
+		if(!have_init) {
+			init();
+			have_init = true;
+		}
 	}
 	
 	void update(char b) {
@@ -27,10 +32,6 @@ public:
 		for(int i = 0; i < sizeof(v); ++i) {
 			update((char)(v >> (i*8)));
 		}
-	}
-	
-	void update(const std::string& str) {
-		update(str.c_str(), str.length());
 	}
 	
 	void update(const char* buf, int length) {
@@ -44,6 +45,10 @@ public:
 		}
 	}
 	
+	void update(const std::string& str) {
+		update(str.c_str(), str.size());
+	}
+	
 	uint64_t getValue() {
 		return ~crc;
 	}
@@ -51,35 +56,32 @@ public:
 private:
 	uint64_t crc;
 	
+	static bool have_init;
+	static void init();
+	
 	static uint64_t poly;
 	static uint64_t crcTable[256];
 	
-	struct init;
-	static init initializer;
-	
 };
 
-
-struct CRC64::init {
-	init() {
-		for (int b = 0; b < 256; ++b) {
-			uint64_t r = b;
-			for (int i = 0; i < 8; ++i) {
-					if ((r & 1) == 1) {
-							r = (r >> 1) ^ poly;
-					} else {
-							r >>= 1;
-					}
-			}
-			crcTable[b] = r;
-		}
-	}
-};
-
+bool CRC64::have_init = false;
 uint64_t CRC64::poly = 0xC96C5795D7870F42ull;
 uint64_t CRC64::crcTable[256];
 
-CRC64::init CRC64::initializer;
+void CRC64::init() {
+	for (int b = 0; b < 256; ++b) {
+		uint64_t r = b;
+		for (int i = 0; i < 8; ++i) {
+				if ((r & 1) == 1) {
+						r = (r >> 1) ^ poly;
+				} else {
+						r >>= 1;
+				}
+		}
+		crcTable[b] = r;
+	}
+}
+
 
 
 #endif /* INCLUDE_CRC64_H_ */

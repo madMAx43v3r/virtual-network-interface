@@ -103,7 +103,7 @@ public:
 
 class Import : public Base {
 public:
-	Package* package;
+	Package* package = 0;
 	string name;
 	
 	Import(string package_, string name_) {
@@ -160,7 +160,7 @@ public:
 	
 	virtual string get_name() { return name; }
 	virtual string get_full_name() { return name; }
-	virtual uint64_t get_hash() { return hash64("vni.AST.Integer"); }
+	virtual uint64_t get_hash() { return hash64("vni.ast.Integer"); }
 };
 
 class Real : public Primitive {
@@ -172,12 +172,13 @@ public:
 	
 	virtual string get_name() { return name; }
 	virtual string get_full_name() { return name; }
-	virtual uint64_t get_hash() { return hash64("vni.AST.Real"); }
+	virtual uint64_t get_hash() { return hash64("vni.ast.Real"); }
 };
+
 
 class Array : public Primitive {
 public:
-	Base* type;
+	Base* type = 0;
 	int size = 0;
 	
 	virtual string get_name() {
@@ -193,12 +194,25 @@ public:
 };
 
 
+class Binary : public Base {
+public:
+	virtual string get_name() { return "binary"; }
+	virtual string get_full_name() { return "vni.ast.Binary"; }
+};
+
+
+class String : public Base {
+public:
+	virtual string get_name() { return "string"; }
+	virtual string get_full_name() { return "vni.ast.String"; }
+};
+
+
 class Field : public Base {
 public:
-	Base* type;
+	Base* type = 0;
 	string name;
 	
-	bool isnull = false;
 	string value;
 	
 	virtual string get_name() { return name; }
@@ -210,13 +224,12 @@ public:
 		hash.update(name);
 		return hash.getValue();
 	}
-	
 };
 
 
 class Param : public Base {
 public:
-	Base* type;
+	Base* type = 0;
 	string name;
 	
 	virtual string get_name() { return name; }
@@ -227,9 +240,11 @@ public:
 
 class Method : public Base {
 public:
-	Base* type;
+	Base* type = 0;
 	string name;
 	vector<Param*> params;
+	
+	bool is_const = false;
 	
 	virtual string get_name() { return name; }
 	virtual string get_full_name() {
@@ -256,7 +271,7 @@ public:
 
 class Type : public Base {
 public:
-	Package* package;
+	Package* package = 0;
 	string name;
 	
 	map<string, Base*> index;
@@ -277,14 +292,14 @@ public:
 
 class Typedef : public Type {
 public:
-	Base* type;
+	Base* type = 0;
 	
 };
 
 
 class Enum : public Base {
 public:
-	Type* type;
+	Type* type = 0;
 	vector<string> values;
 	
 	Enum() {
@@ -303,14 +318,16 @@ public:
 
 class Class : public Struct {
 public:
-	Base* super;
+	Base* super = 0;
 	
 };
 
 
+class TmplType;
+
 class Interface : public Class {
 public:
-	vector<string> params;
+	vector<TmplType*> params;
 	vector<Method*> methods;
 	
 	Interface() {
@@ -336,7 +353,7 @@ public:
 
 class Instance : public Base {
 public:
-	Base* type = 0;
+	Interface* type = 0;
 	vector<Type*> params;
 	
 };
@@ -344,11 +361,11 @@ public:
 
 class TmplType : public Base {
 public:
-	Interface* type;
+	Interface* type = 0;
 	string name;
 	
 	TmplType(Interface* type, string name) : type(type), name(name) {
-		type->params.push_back(name);
+		type->params.push_back(this);
 		type->index[name] = this;
 	}
 	
@@ -368,11 +385,11 @@ public:
 
 static Base* resolve(const string& ident) {
 	Base* res = INDEX[hash64(ident)];
-	if(!res && PACKAGE) {
-		res = PACKAGE->index[ident];
-	}
 	if(!res && TYPE) {
 		res = TYPE->index[ident];
+	}
+	if(!res && PACKAGE) {
+		res = PACKAGE->index[ident];
 	}
 	if(!res) {
 		int pos = ident.find_last_of('.');

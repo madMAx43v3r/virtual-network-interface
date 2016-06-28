@@ -1,0 +1,15 @@
+package test;
+
+import test.Value;
+import test.value_t;
+
+
+class TestType {
+	
+	Value val;
+	Value vec[3];
+	
+	value_t val2;
+	value_t vec2[3];
+	
+}

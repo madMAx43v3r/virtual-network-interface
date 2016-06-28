@@ -16,7 +16,6 @@ int main() {
 	PACKAGE = new Package("test");
 	
 	Class* Value = new Class();
-	Value->package = "test";
 	Value->name = "Value";
 	Value->fields.push_back(new Field());
 	Value->fields[0]->type = resolve("int");
@@ -29,7 +28,6 @@ int main() {
 	Value->fields[2]->name = "z";
 	
 	Struct* value_t = new Struct();
-	value_t->package = "test";
 	value_t->name = "value_t";
 	value_t->fields.push_back(new Field());
 	value_t->fields[0]->type = resolve("int");

@@ -8,35 +8,64 @@
 #ifndef CPP_GENERATED_TEST_VALUE_H_
 #define CPP_GENERATED_TEST_VALUE_H_
 
-#include <vnl/io.h>
+#include <vni/Type.h>
 
 
 namespace test {
 
-class Value : public vnl::io::Serializable {
+class Value : public vni::Type {
 public:
+	static const uint32_t HASH = 0x51212323;
 	
-	int32_t x;
-	int32_t y;
-	int32_t z;
+	int32_t x = 0;
+	int32_t y = 0;
+	int32_t z = 0;
 	
-	virtual void serialize(vnl::io::TypeOutput<vnl::io::PageBuffer>& stream) {
-		stream.beginType(0x1212323435345ULL, 3);
-		stream.putInt(0x4354534, x);
-		stream.putInt(0x4345534, y);
-		stream.putInt(0x4356544, z);
+	Value() {
+		vni_hash_ = HASH;
 	}
 	
-	virtual void deserialize(vnl::io::TypeInput<vnl::io::PageBuffer>& stream, int num_entries) {
+	static Value* create() {
+		return create(HASH);
+	}
+	
+	static Value* create(uint32_t hash) {
+		switch(hash) {
+			case HASH: return vni::TypePool<Value>::create();
+			default: return 0;
+		}
+	}
+	
+	static void destroy(Value* obj) {
+		if(obj) {
+			switch(obj->vni_hash) {
+				case HASH: vni::TypePool<Value>::destroy(obj);
+			}
+		}
+	}
+	
+	virtual void serialize(vnl::io::TypeOutput<vnl::io::PageBuffer>& out) {
+		out.putSize(-3);
+		out.putHash(HASH);
+		out.putHash(0x4354534);
+		out.putInt(x);
+		out.putHash(0x4345534);
+		out.putInt(y);
+		out.putHash(0x4356544);
+		out.putInt(z);
+	}
+	
+	virtual void deserialize(vnl::io::TypeInput<vnl::io::PageBuffer>& in, int num_entries) {
+		uint32_t hash = 0;
+		int32_t size = 0;
 		for(int i = 0; i < num_entries; ++i) {
-			uint32_t hash;
-			int16_t size;
-			stream.beginEntry(hash, size);
+			in.getHash(hash);
+			in.getSize(size);
 			switch(hash) {
-				case 0x4354534: stream.getInt(x, size); break;
-				case 0x4345534: stream.getInt(y, size); break;
-				case 0x4356544: stream.getInt(z, size); break;
-				default: stream.skip(size);
+				case 0x4354534: in.getInt(x, size); break;
+				case 0x4345534: in.getInt(y, size); break;
+				case 0x4356544: in.getInt(z, size); break;
+				default: in.skip(size);
 			}
 		}
 	}

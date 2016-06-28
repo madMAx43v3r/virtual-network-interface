@@ -1,0 +1,10 @@
+package test;
+
+import vni.Topic;
+import test.TestType;
+
+class TestDomain {
+	
+	Topic<TestType> test_topic;
+	
+}

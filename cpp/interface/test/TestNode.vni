@@ -1,0 +1,10 @@
+package test;
+
+import test.TestType;
+import test.TestDomain;
+
+interface TestNode extends vni.Node {
+	
+	void handle(TestType);
+	
+}

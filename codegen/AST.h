@@ -194,20 +194,6 @@ public:
 };
 
 
-class Binary : public Base {
-public:
-	virtual string get_name() { return "binary"; }
-	virtual string get_full_name() { return "vni.ast.Binary"; }
-};
-
-
-class String : public Base {
-public:
-	virtual string get_name() { return "string"; }
-	virtual string get_full_name() { return "vni.ast.String"; }
-};
-
-
 class Field : public Base {
 public:
 	Base* type = 0;

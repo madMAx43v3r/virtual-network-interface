@@ -19,6 +19,8 @@ class ListBase : public vnl::List<T>, public vnl::io::Serializable {
 public:
 	virtual ~ListBase() {}
 	
+	virtual void push_back(T* elem) = 0;
+	
 	virtual bool deserialize(vnl::io::TypeInput<vnl::io::PageBuffer>& stream) {
 		
 	}

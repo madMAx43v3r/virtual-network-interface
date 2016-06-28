@@ -1,0 +1,11 @@
+package vni;
+
+import vni.Address;
+
+interface Topic<T> {
+	
+	void set(char B[8]);
+	
+	String getTypeName() const;
+	
+}

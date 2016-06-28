@@ -16,10 +16,12 @@ namespace test {
 
 class TestType : public vni::Type {
 public:
-	static const uint32_t HASH = 0x5df232ab;
-	
 	Value* val = 0;
 	Value val2;
+	
+	static const uint32_t HASH = 0x5df232ab;
+	
+	VNI_SAMPLE(TestType);
 	
 	TestType() {
 		vni_hash_ = HASH;

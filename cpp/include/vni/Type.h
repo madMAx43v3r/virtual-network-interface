@@ -9,11 +9,18 @@
 #define CPP_VNI_TYPE_H_
 
 #include <vnl/io.h>
+#include <vnl/Packet.h>
 #include <vnl/Pool.h>
 #include <vnl/util/spinlock.h>
 
 
+#define VNI_SAMPLE(type) typedef vnl::PacketType<type, vni::PID_SAMPLE> sample_t;
+
+
 namespace vni {
+
+static const uint32_t PID_SAMPLE = 0xa37b95eb;
+
 
 class Type : public vnl::io::Serializable {
 public:
@@ -22,6 +29,8 @@ public:
 	uint32_t vni_hash() const {
 		return vni_hash_;
 	}
+	
+	virtual const char* vni_type_name() const = 0;
 	
 protected:
 	uint32_t vni_hash_;

@@ -15,11 +15,13 @@ namespace test {
 
 class Value : public vni::Type {
 public:
-	static const uint32_t HASH = 0x51212323;
-	
 	int32_t x = 0;
 	int32_t y = 0;
 	int32_t z = 0;
+	
+	static const uint32_t HASH = 0x51212323;
+	
+	VNI_SAMPLE(Value);
 	
 	Value() {
 		vni_hash_ = HASH;
@@ -42,6 +44,10 @@ public:
 				case HASH: vni::TypePool<Value>::destroy(obj);
 			}
 		}
+	}
+	
+	const char* vni_type_name() const {
+		return "test.Value";
 	}
 	
 	virtual void serialize(vnl::io::TypeOutput<vnl::io::PageBuffer>& out) {

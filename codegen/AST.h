@@ -226,7 +226,8 @@ public:
 
 class Method : public Base {
 public:
-	Base* type = 0;
+	Type* type = 0;
+	Base* rtype = 0;
 	string name;
 	vector<Param*> params;
 	
@@ -234,7 +235,7 @@ public:
 	
 	virtual string get_name() { return name; }
 	virtual string get_full_name() {
-		string str = type->get_name() + " " + name + "(";
+		string str = rtype->get_name() + " " + name + "(";
 		for(int i = 0; i < params.size(); ++i) {
 			str += params[i]->type->get_full_name();
 			if(i < params.size()-1) {
@@ -246,6 +247,7 @@ public:
 	
 	virtual uint64_t get_hash() {
 		CRC64 hash;
+		hash.update(type->get_hash());
 		hash.update(name);
 		for(Param* param : params) {
 			hash.update(param->type->get_hash());
@@ -272,7 +274,7 @@ public:
 	}
 	
 	virtual string get_name() { return name; }
-	virtual string get_full_name() { return package->get_full_name() + "." + name; }
+	virtual string get_full_name() { return package->get_full_name() + "." + get_name(); }
 };
 
 
@@ -359,12 +361,6 @@ public:
 	virtual string get_full_name() { return type->get_full_name() + "::" + name; }
 };
 
-
-class Object : public Interface {
-public:
-	
-	
-};
 
 
 

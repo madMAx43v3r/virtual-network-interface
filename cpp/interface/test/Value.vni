@@ -7,7 +7,5 @@ class Value {
 }
 
 struct value_t {
-	int x;
-	int y;
-	int z;
+	float pos[3];
 }

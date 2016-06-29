@@ -50,8 +50,8 @@ public:
 		return "test.Value";
 	}
 	
-	virtual void serialize(vnl::io::TypeOutput<vnl::io::PageBuffer>& out) {
-		out.putSize(-3);
+	virtual void serialize(TypeOutput& out) {
+		out.putEntry(VNL_IO_TYPE, 3);
 		out.putHash(HASH);
 		out.putHash(0x4354534);
 		out.putInt(x);
@@ -61,17 +61,17 @@ public:
 		out.putInt(z);
 	}
 	
-	virtual void deserialize(vnl::io::TypeInput<vnl::io::PageBuffer>& in, int num_entries) {
+	virtual void deserialize(TypeInput& in, uint32_t num_entries) {
 		uint32_t hash = 0;
-		int32_t size = 0;
+		uint32_t size = 0;
 		for(int i = 0; i < num_entries; ++i) {
 			in.getHash(hash);
-			in.getSize(size);
+			int id = in.getEntry(size);
 			switch(hash) {
 				case 0x4354534: in.getInt(x, size); break;
 				case 0x4345534: in.getInt(y, size); break;
 				case 0x4356544: in.getInt(z, size); break;
-				default: in.skip(size);
+				default: in.skip(id, size);
 			}
 		}
 	}

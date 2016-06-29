@@ -8,37 +8,38 @@
 #ifndef CPP_GENERATED_VNI_LISTBASE_H_
 #define CPP_GENERATED_VNI_LISTBASE_H_
 
-#include <vnl/io.h>
+#include <vni/Type.h>
 #include <vnl/List.h>
 
 
 namespace vni {
 
 template<typename T>
-class ListBase : public vnl::List<T>, public vnl::io::Serializable {
+class ListBase : public vnl::List<T>, public vni::Type {
 public:
 	virtual ~ListBase() {}
 	
 	virtual void push_back(T* elem) = 0;
+	virtual void clear() = 0;
 	
-	virtual bool deserialize(vnl::io::TypeInput<vnl::io::PageBuffer>& stream) {
+	virtual bool deserialize(TypeInput& in) {
 		
 	}
 	
 protected:
 	class Writer {
 	public:
-		Writer(vnl::io::TypeOutput<vnl::io::PageBuffer>& stream) : stream(stream) {}
+		Writer(TypeOutput& out) : out(out) {}
 		void push_back(T* elem) {
-			stream.putFunc(0x1337, 1);
-			stream.putType(0x1234);
-			elem->serialize(stream, tmp);
+			out.putFunc(0x1337, 1);
+			out.putType(0x1234);
+			elem->serialize(out, tmp);
 		}
 		void clear() {
-			stream.putFunc(0x1338, 0);
+			out.putFunc(0x1338, 0);
 		}
 	private:
-		vnl::io::TypeOutput<vnl::io::PageBuffer>& stream;
+		TypeOutput& out;
 	};
 	
 };

@@ -31,8 +31,8 @@ public:
 		Value::destroy(val);
 	}
 	
-	virtual void serialize(vnl::io::TypeOutput<vnl::io::PageBuffer>& out) {
-		out.putSize(-2);
+	virtual void serialize(TypeOutput& out) {
+		out.putEntry(VNL_IO_TYPE, 2);
 		out.putHash(HASH);
 		out.putHash(0x4786877);
 		if(val) {
@@ -44,31 +44,31 @@ public:
 		val2.serialize(out);
 	}
 	
-	virtual void deserialize(vnl::io::TypeInput<vnl::io::PageBuffer>& in, int num_entries) {
+	virtual void deserialize(TypeInput& in, uint32_t num_entries) {
 		uint32_t hash = 0;
-		int32_t size = 0;
+		uint32_t size = 0;
 		for(int i = 0; i < num_entries; ++i) {
 			in.getHash(hash);
-			in.getSize(size);
+			int id = in.getEntry(size);
 			switch(hash) {
 				case 0x4786877:
 					in.getHash(hash);
 					val = Value::create(hash);
 					if(val) {
-						val->deserialize(in, -size);
+						val->deserialize(in, size);
 					} else {
-						in.skip(size);
+						in.skip(id, size);
 					}
 					break;
 				case 0x7246790:
 					in.getHash(hash);
 					if(hash == Value::HASH) {
-						val2.deserialize(in, -size);
+						val2.deserialize(in, size);
 					} else {
 						in.skip(size);
 					}
 					break;
-				default: in.skip(size);
+				default: in.skip(id, size);
 			}
 		}
 	}

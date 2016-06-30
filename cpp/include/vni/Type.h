@@ -38,6 +38,35 @@ protected:
 };
 
 
+class Interface : public Type {
+public:
+	virtual void deserialize(vnl::io::TypeInputStream& in, uint32_t num_entries) {
+		while(!in.error()) {
+			uint32_t hash = 0;
+			uint32_t size = 0;
+			int id = in.getEntry(size);
+			if(id == VNL_IO_CALL) {
+				in.getHash(hash);
+				if(!call(in, hash, size)) {
+					for(uint32_t i = 0; i < size; ++i) {
+						in.skip();
+					}
+				}
+			} else if(id == VNL_IO_INTERFACE && size == VNL_IO_END) {
+				break;
+			} else {
+				in.skip(id, size);
+			}
+		}
+	}
+	
+protected:
+	virtual bool call(vnl::io::TypeInputStream& in, uint32_t hash, uint32_t num_args) = 0;
+	virtual bool const_call(vnl::io::TypeInputStream& in, uint32_t hash, uint32_t num_args, vnl::io::TypeOutputStream& out) = 0;
+	
+};
+
+
 template<typename T>
 class TypePool {
 public:

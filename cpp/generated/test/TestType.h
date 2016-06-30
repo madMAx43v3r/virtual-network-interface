@@ -10,6 +10,7 @@
 
 #include <vni/Type.h>
 #include <test/Value.h>
+#include <test/value_t.h>
 
 
 namespace test {
@@ -17,7 +18,7 @@ namespace test {
 class TestType : public vni::Type {
 public:
 	Value* val = 0;
-	Value val2;
+	value_t val2;
 	
 	static const uint32_t HASH = 0x5df232ab;
 	
@@ -31,8 +32,8 @@ public:
 		Value::destroy(val);
 	}
 	
-	virtual void serialize(TypeOutput& out) {
-		out.putEntry(VNL_IO_TYPE, 2);
+	virtual void serialize(vnl::io::TypeOutputStream& out) const {
+		out.putEntry(VNL_IO_CLASS, 2);
 		out.putHash(HASH);
 		out.putHash(0x4786877);
 		if(val) {
@@ -44,31 +45,14 @@ public:
 		val2.serialize(out);
 	}
 	
-	virtual void deserialize(TypeInput& in, uint32_t num_entries) {
-		uint32_t hash = 0;
-		uint32_t size = 0;
-		for(int i = 0; i < num_entries; ++i) {
+	virtual void deserialize(vnl::io::TypeInputStream& in, uint32_t num_entries) {
+		for(int i = 0; i < num_entries && !in.error(); ++i) {
+			uint32_t hash = 0;
 			in.getHash(hash);
-			int id = in.getEntry(size);
 			switch(hash) {
-				case 0x4786877:
-					in.getHash(hash);
-					val = Value::create(hash);
-					if(val) {
-						val->deserialize(in, size);
-					} else {
-						in.skip(id, size);
-					}
-					break;
-				case 0x7246790:
-					in.getHash(hash);
-					if(hash == Value::HASH) {
-						val2.deserialize(in, size);
-					} else {
-						in.skip(size);
-					}
-					break;
-				default: in.skip(id, size);
+				case 0x4786877: val = Value::read(in); break;
+				case 0x7246790: value_t::read(in, &val2); break;
+				default: in.skip();
 			}
 		}
 	}

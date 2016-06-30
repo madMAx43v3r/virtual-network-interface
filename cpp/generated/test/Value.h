@@ -15,9 +15,9 @@ namespace test {
 
 class Value : public vni::Type {
 public:
-	int32_t x = 0;
-	int32_t y = 0;
-	int32_t z = 0;
+	int32_t x;
+	int32_t y;
+	int32_t z;
 	
 	static const uint32_t HASH = 0x51212323;
 	
@@ -25,6 +25,9 @@ public:
 	
 	Value() {
 		vni_hash_ = HASH;
+		x = 0;
+		y = 0;
+		z = 0;
 	}
 	
 	static Value* create() {
@@ -38,6 +41,24 @@ public:
 		}
 	}
 	
+	static Value* read(vnl::io::TypeInputStream& in) {
+		Value* obj = 0;
+		uint32_t hash = 0;
+		uint32_t size = 0;
+		int id = in.getEntry(size);
+		if(id == VNL_IO_CLASS) {
+			in.getHash(hash);
+			obj = create(hash);
+			if(obj) {
+				obj->deserialize(in, size);
+			}
+		}
+		if(!obj) {
+			in.skip(id, size);
+		}
+		return obj;
+	}
+	
 	static void destroy(Value* obj) {
 		if(obj) {
 			switch(obj->vni_hash) {
@@ -46,12 +67,12 @@ public:
 		}
 	}
 	
-	const char* vni_type_name() const {
+	virtual const char* vni_type_name() const {
 		return "test.Value";
 	}
 	
-	virtual void serialize(TypeOutput& out) {
-		out.putEntry(VNL_IO_TYPE, 3);
+	virtual void serialize(vnl::io::TypeOutputStream& out) const {
+		out.putEntry(VNL_IO_CLASS, 3);
 		out.putHash(HASH);
 		out.putHash(0x4354534);
 		out.putInt(x);
@@ -61,17 +82,15 @@ public:
 		out.putInt(z);
 	}
 	
-	virtual void deserialize(TypeInput& in, uint32_t num_entries) {
-		uint32_t hash = 0;
-		uint32_t size = 0;
-		for(int i = 0; i < num_entries; ++i) {
+	virtual void deserialize(vnl::io::TypeInputStream& in, uint32_t num_entries) {
+		for(int i = 0; i < num_entries && !in.error(); ++i) {
+			uint32_t hash = 0;
 			in.getHash(hash);
-			int id = in.getEntry(size);
 			switch(hash) {
-				case 0x4354534: in.getInt(x, size); break;
-				case 0x4345534: in.getInt(y, size); break;
-				case 0x4356544: in.getInt(z, size); break;
-				default: in.skip(id, size);
+				case 0x4354534: in.getInteger(x); break;
+				case 0x4345534: in.getInteger(y); break;
+				case 0x4356544: in.getInteger(z); break;
+				default: in.skip();
 			}
 		}
 	}

@@ -10,47 +10,17 @@
 
 #include <vni/Type.h>
 #include <vni/Frame.h>
-#include <vnl/Node.h>
-#include <vnl/List.h>
 
 
 namespace vni {
 
 template<typename T>
-class ListBase : public vnl::List<T*>, public vni::Interface {
-protected:
-	virtual void push_back(T* elem) = 0;
-	virtual void clear() = 0;
-	
+class ListBase : public vni::Interface {
 public:
 	static const uint32_t HASH = 0x16233789;
 	
-	virtual ~ListBase() {}
-	
-	virtual bool call(vnl::io::TypeInputStream& in, uint32_t hash, uint32_t num_args) {
-		switch(hash) {
-		case 0x1337:
-			if(num_args == 1) {
-				T* obj = T::read(in);
-				push_back(obj);
-				return true;
-			}
-			break;
-		case 0x1338:
-			if(num_args == 0) {
-				clear();
-				return true;
-			}
-			break;
-		}
-		return false;
-	}
-	
-	virtual bool const_call(vnl::io::TypeInputStream& in, uint32_t hash, uint32_t num_args, vnl::io::TypeOutputStream& out) {
-		switch(hash) {
-		}
-		return false;
-	}
+	virtual void push_back(T* elem) = 0;
+	virtual void clear() = 0;
 	
 	class Client : public vni::Client {
 	public:
@@ -69,6 +39,7 @@ public:
 		}
 	};
 	
+protected:
 	class Writer {
 	public:
 		Writer(vnl::io::TypeOutputStream& out) : out(out) {}
@@ -95,6 +66,31 @@ public:
 			out.putEntry(VNL_IO_INTERFACE, VNL_IO_END);
 		}
 	};
+	
+	virtual bool call(vnl::io::TypeInputStream& in, uint32_t hash, uint32_t num_args) {
+		switch(hash) {
+		case 0x1337:
+			if(num_args == 1) {
+				T* obj = T::read(in);
+				push_back(obj);
+				return true;
+			}
+			break;
+		case 0x1338:
+			if(num_args == 0) {
+				clear();
+				return true;
+			}
+			break;
+		}
+		return false;
+	}
+	
+	virtual bool const_call(vnl::io::TypeInputStream& in, uint32_t hash, uint32_t num_args, vnl::io::TypeOutputStream& out) {
+		switch(hash) {
+		}
+		return false;
+	}
 	
 };
 

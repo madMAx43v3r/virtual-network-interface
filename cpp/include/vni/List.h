@@ -26,6 +26,13 @@ public:
 		
 	}
 	
+	virtual void serialize(vnl::io::TypeOutputStream& out) const {
+		Serializer sr(out);
+		for(T* obj : list) {
+			sr.push_back(obj);
+		}
+	}
+	
 private:
 	vnl::List<T*> list;
 	

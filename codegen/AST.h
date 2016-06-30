@@ -125,18 +125,6 @@ public:
 };
 
 
-class Extern : public Base {
-public:
-	string package;
-	string name;
-	
-	Extern(string package_, string name_) {
-		package = package_;
-		name = name_;
-	}
-};
-
-
 enum {
 	BYTE = 1, WORD = 2, DWORD = 4, QWORD = 8
 };

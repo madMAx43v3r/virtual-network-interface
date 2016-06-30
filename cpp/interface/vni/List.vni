@@ -1,8 +1,6 @@
 package vni;
 
-extern vnl.List;
-
-interface List<T> extends vnl.List<T> {
+interface List<T> {
 	
 	void push_back(T elem);
 	

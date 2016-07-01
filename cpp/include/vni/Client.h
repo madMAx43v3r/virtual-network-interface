@@ -30,7 +30,7 @@ public:
 		data->free_all();
 	}
 	
-	void connect(vnl::Engine* engine, vnl::Address dst_) {
+	void vni_connect(vnl::Engine* engine, vnl::Address dst_) {
 		if(is_connected) {
 			Stream::close(dst);
 		}
@@ -40,11 +40,12 @@ public:
 		is_connected = true;
 	}
 	
-	void set_timeout(int64_t millis) {
+	void vni_set_timeout(int64_t millis) {
 		timeout = millis;
 	}
 	
-	vnl::Packet* call(bool is_const) {
+protected:
+	vnl::Packet* call() {
 		out.flush();
 		next_seq++;
 		Frame* ret = 0;
@@ -53,7 +54,6 @@ public:
 			frame.data = data;
 			frame.size = buf.position();
 			frame.seq = next_seq;
-			frame.is_const = is_const;
 			send(&frame, dst);
 			frame.data = 0;
 			// TODO
@@ -71,7 +71,7 @@ private:
 	vnl::io::TypeInput in;
 	vnl::io::TypeOutput out;
 	uint32_t next_seq = 0;
-	int64_t timeout = 3000;
+	int64_t timeout = 1000;
 	bool is_connected = false;
 	
 };

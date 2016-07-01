@@ -34,6 +34,14 @@ public:
 		}
 	}
 	
+	static void read(vnl::io::TypeInput& in, value_t* obj) {
+		vni::Struct::read<value_t>(in, obj);
+	}
+	
+	static value_t* read(vnl::io::TypeInput& in) {
+		return vni::Struct::read<value_t>(in);
+	}
+	
 	virtual const char* vni_type_name() const {
 		return "test.value_t";
 	}
@@ -41,7 +49,7 @@ public:
 	virtual void serialize(vnl::io::TypeOutput& out) const {
 		out.putEntry(VNL_IO_STRUCT, 1);
 		out.putHash(0x8356785);
-		out.putArray(3, pos);
+		out.putArray(pos, 3);
 	}
 	
 	virtual void deserialize(vnl::io::TypeInput& in, int size) {
@@ -49,7 +57,7 @@ public:
 			uint32_t hash = 0;
 			in.getHash(hash);
 			switch(hash) {
-				case 0x8356785: in.getArray(3, pos); break;
+				case 0x8356785: in.getArray(pos, 3); break;
 				default: in.skip();
 			}
 		}

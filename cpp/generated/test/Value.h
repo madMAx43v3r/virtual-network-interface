@@ -47,6 +47,14 @@ public:
 		}
 	}
 	
+	static void read(vnl::io::TypeInput& in, Value* obj) {
+		vni::Class::read<Value>(in, obj);
+	}
+	
+	static Value* read(vnl::io::TypeInput& in) {
+		return vni::Class::read<Value>(in);
+	}
+	
 	virtual const char* vni_type_name() const {
 		return "test.Value";
 	}

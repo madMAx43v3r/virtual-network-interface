@@ -1,9 +1,8 @@
 package test;
 
 import test.TestType;
-import test.TestDomain;
 
-interface TestNode extends vni.Node {
+interface TestNode extends vni.Object {
 	
 	void handle(TestType);
 	

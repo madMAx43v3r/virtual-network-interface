@@ -23,7 +23,7 @@ public:
 			int id = in.getEntry(size);
 			if(id == VNL_IO_CALL) {
 				in.getHash(hash);
-				if(!call(in, hash, size)) {
+				if(!vni_call(in, hash, size)) {
 					for(uint32_t i = 0; i < size; ++i) {
 						in.skip();
 					}
@@ -36,9 +36,20 @@ public:
 		}
 	}
 	
+	template<typename T>
+	static void read(vnl::io::TypeInput& in, T* obj) {
+		int size = 0;
+		int id = in.getEntry(size);
+		if(id == VNL_IO_INTERFACE) {
+			obj->deserialize(in, size);
+		} else {
+			in.skip(id, size);
+		}
+	}
+	
 protected:
-	virtual bool call(vnl::io::TypeInput& in, uint32_t hash, int num_args) = 0;
-	virtual bool const_call(vnl::io::TypeInput& in, uint32_t hash, int num_args, vnl::io::TypeOutput& out) = 0;
+	virtual bool vni_call(vnl::io::TypeInput& in, uint32_t hash, int num_args) = 0;
+	virtual bool vni_const_call(vnl::io::TypeInput& in, uint32_t hash, int num_args, vnl::io::TypeOutput& out) = 0;
 	
 };
 

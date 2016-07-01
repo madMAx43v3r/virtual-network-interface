@@ -20,10 +20,8 @@ public:
 	vnl::Page* data = 0;
 	int size = 0;
 	uint32_t seq = 0;
-	bool is_const = false;
-	bool is_return = false;
 	
-	Frame() : Packet(PID_FRAME) {
+	Frame() : Packet(PID_FRAME), out(&buf) {
 		payload = this;
 	}
 	
@@ -31,6 +29,15 @@ public:
 		if(data) {
 			data->free_all();
 		}
+	}
+	
+	virtual void deserialize(vnl::io::TypeInput& in, int size) {
+		if(!data) {
+			data = vnl::Page::alloc();
+		}
+		buf.wrap(data);
+		Packet::deserialize(in, size);
+		out.flush();
 	}
 	
 protected:
@@ -42,15 +49,13 @@ protected:
 		}
 	}
 	
-	virtual void read(vnl::io::TypeInput& in) {
-		if(!data) {
-			data = vnl::Page::alloc();
-		}
-		vnl::io::ByteBuffer buf(data);
-		vnl::io::TypeOutput out(&buf);
-		in.copy(&out);
-		is_const = (data->mem[0] & 0xF) == VNL_IO_CONST_CALL;
+	virtual void read(vnl::io::TypeInput& in, int id, int size) {
+		in.copy(id, size, &out);
 	}
+	
+private:
+	vnl::io::ByteBuffer buf;
+	vnl::io::TypeOutput out;
 	
 };
 

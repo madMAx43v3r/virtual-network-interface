@@ -256,6 +256,7 @@ public:
 	string name;
 	
 	map<string, Base*> index;
+	vector<Field*> constants;
 	
 	Type(string name) : name(name) {
 		package = PACKAGE;
@@ -291,7 +292,6 @@ public:
 
 class Struct : public Type {
 public:
-	vector<Field*> constants;
 	vector<Field*> fields;
 	
 };
@@ -306,7 +306,7 @@ public:
 
 class TmplType;
 
-class Interface : public Class {
+class Interface : public Type {
 public:
 	vector<TmplType*> params;
 	vector<Method*> methods;

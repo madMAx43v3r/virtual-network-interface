@@ -17,74 +17,77 @@ namespace vni {
 template<typename T>
 class ListBase : public vni::Interface {
 public:
-	static const uint32_t HASH = 0x16233789;
-	
 	virtual void push_back(T* elem) = 0;
 	virtual void clear() = 0;
 	virtual int32_t test(int32_t val) const = 0;
 	
+	static const uint32_t HASH = 0x16233789;
+	
+	ListBase() {
+		vni_hash_ = HASH;
+	}
+	
+	virtual const char* vni_type_name() const {
+		return "vni.List";
+	}
+	
 	class Client : public vni::Client {
 	public:
 		void push_back(T* elem) {
-			buf.wrap(data);
-			Writer wr(out);
-			wr.push_back(elem);
-			vnl::Packet* pkt = call(false);
-			if(pkt) {
-				pkt->ack();
+			vni::Client::buf.wrap(vni::Client::data);
+			Writer _wr(vni::Client::out);
+			_wr.push_back(elem);
+			vnl::Packet* _pkt = vni::Client::call();
+			if(_pkt) {
+				_pkt->ack();
 			}
 		}
 		void clear() {
 			// same
 		}
 		int32_t test(int32_t val) {
-			buf.wrap(data);
-			Writer wr(out);
-			wr.test(val);
-			vnl::Packet* pkt = call(true);
-			int32_t res = 0;
-			if(pkt) {
-				in.getInteger(res);
-				pkt->ack();
+			vni::Client::buf.wrap(vni::Client::data);
+			Writer _wr(vni::Client::out);
+			_wr.test(val);
+			vnl::Packet* _pkt = vni::Client::call();
+			int32_t _res = 0;
+			if(_pkt) {
+				vni::Client::in.getInteger(_res);
+				_pkt->ack();
 			}
-			return res;
+			return _res;
 		}
 	};
 	
 protected:
 	class Writer {
 	public:
-		Writer(vnl::io::TypeOutput& out) : out(out) {}
-		void push_back(T* elem) {
-			out.putEntry(VNL_IO_CALL, 1);
-			out.putHash(0x1337);
-			elem->serialize(out);
-		}
-		void clear() {
-			out.putEntry(VNL_IO_CALL, 0);
-			out.putHash(0x1338);
-		}
-		void test(int32_t val) {
-			out.putEntry(VNL_IO_CALL, 1);
-			out.putHash(0x1339);
-			out.putInt(val);
-		}
-	protected:
-		vnl::io::TypeOutput& out;
-	};
-	
-	class Serializer : public Writer {
-	public:
-		Serializer(vnl::io::TypeOutput& out) : Writer(out) {
+		Writer(vnl::io::TypeOutput& out) : _out(out) {
 			out.putEntry(VNL_IO_INTERFACE, VNL_IO_BEGIN);
 			out.putHash(HASH);
 		}
-		~Serializer() {
-			out.putEntry(VNL_IO_INTERFACE, VNL_IO_END);
+		~Writer() {
+			_out.putEntry(VNL_IO_INTERFACE, VNL_IO_END);
 		}
+		void push_back(T* elem) {
+			_out.putEntry(VNL_IO_CALL, 1);
+			_out.putHash(0x1337);
+			elem->serialize(_out);
+		}
+		void clear() {
+			_out.putEntry(VNL_IO_CALL, 0);
+			_out.putHash(0x1338);
+		}
+		void test(int32_t val) {
+			_out.putEntry(VNL_IO_CALL, 1);
+			_out.putHash(0x1339);
+			_out.putInt(val);
+		}
+	protected:
+		vnl::io::TypeOutput& _out;
 	};
 	
-	virtual bool call(vnl::io::TypeInput& in, uint32_t hash, int num_args) {
+	virtual bool vni_call(vnl::io::TypeInput& in, uint32_t hash, int num_args) {
 		switch(hash) {
 		case 0x1337:
 			if(num_args == 1) {
@@ -103,7 +106,7 @@ protected:
 		return false;
 	}
 	
-	virtual bool const_call(vnl::io::TypeInput& in, uint32_t hash, int num_args, vnl::io::TypeOutput& out) {
+	virtual bool vni_const_call(vnl::io::TypeInput& in, uint32_t hash, int num_args, vnl::io::TypeOutput& out) {
 		switch(hash) {
 		case 0x1339:
 			if(num_args == 1) {

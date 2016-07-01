@@ -20,25 +20,6 @@ public:
 	
 	static void destroy(Class* obj);
 	
-	template<typename T>
-	static T* read(vnl::io::TypeInput& in) {
-		T* obj = 0;
-		uint32_t hash = 0;
-		int size = 0;
-		int id = in.getEntry(size);
-		if(id == VNL_IO_CLASS) {
-			in.getHash(hash);
-			obj = T::create(hash);
-			if(obj) {
-				obj->deserialize(in, size);
-			}
-		}
-		if(!obj) {
-			in.skip(id, size);
-		}
-		return obj;
-	}
-	
 	
 };
 

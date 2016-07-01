@@ -30,28 +30,39 @@ public:
 			handle(((Sample*)pkt)->data, pkt->src_addr, pkt->dst_addr);
 		} else if(pkt->pkt_id == vni::PID_FRAME) {
 			Frame* req = (Frame*)pkt->payload;
+			Frame* ret = buffer.create<Frame>();
 			in_buf.wrap(req->data, req->size);
-			uint32_t hash = 0;
 			int size = 0;
 			int id = in.getEntry(size);
-			if(id == VNL_IO_CALL) {
+			if(id == VNL_IO_INTERFACE) {
+				uint32_t hash = 0;
 				in.getHash(hash);
-				call(in, hash, size);
-			} else if(id == VNL_IO_CONST_CALL) {
-				in.getHash(hash);
-				vnl::Page* ret_data = vnl::Page::alloc();
-				out_buf.wrap(ret_data);
-				if(!const_call(in, hash, size, out)) {
-					out.putNull();
+				if(hash == vni_hash_) {
+					ret->data = vnl::Page::alloc();
+					out_buf.wrap(ret->data);
+					while(!in.error()) {
+						uint32_t hash = 0;
+						int size = 0;
+						int id = in.getEntry(size);
+						if(id == VNL_IO_CALL) {
+							in.getHash(hash);
+							bool res = vni_call(in, hash, size);
+							out.putBool(res);
+						} else if(id == VNL_IO_CONST_CALL) {
+							in.getHash(hash);
+							if(!vni_const_call(in, hash, size, out)) {
+								out.putNull();
+							}
+						} else if(id == VNL_IO_INTERFACE && size == VNL_IO_END) {
+							break;
+						}
+					}
+					out.flush();
+					ret->size = out_buf.position();
 				}
-				out.flush();
-				Frame* ret = buffer.create<Frame>();
-				ret->data = ret_data;
-				ret->size = out_buf.position();
-				ret->seq = req->seq;
-				ret->is_return = true;
-				send_async(ret, req->src_addr);
 			}
+			ret->seq = req->seq;
+			send_async(ret, req->src_addr);
 		}
 		return false;
 	}

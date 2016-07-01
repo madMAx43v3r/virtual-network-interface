@@ -15,53 +15,64 @@
 
 namespace vni {
 
-class Client {
+class Client : public vnl::Stream {
 public:
-	Client() {
+	Client()
+		:	in(&buf), out(&buf)
+	{
 		data = vnl::Page::alloc();
 	}
 	
 	~Client() {
+		if(is_connected) {
+			Stream::close(dst);
+		}
 		data->free_all();
 	}
 	
 	void connect(vnl::Engine* engine, vnl::Address dst_) {
-		stream.open(engine);
+		if(is_connected) {
+			Stream::close(dst);
+		}
 		dst = dst_;
+		Stream::connect(engine);
+		Stream::open(dst);
+		is_connected = true;
 	}
 	
 	void set_timeout(int64_t millis) {
 		timeout = millis;
 	}
 	
-	void set_max_retries(int num) {
-		max_retries = num;
-	}
-	
-	Frame* call(vnl::io::PageBuffer& data, bool is_const) {
-		data.flip();
-		Frame frame;
-		frame.dst_addr = dst;
-		frame.data = data;
-		frame.size = data.limit();
-		frame.seq = next_seq++;
-		frame.is_const = is_const;
-		int left = max_retries;
-		while(left > 0 || left < 0) {
-			stream.send(&frame, vnl::Router::instance);
+	vnl::Packet* call(bool is_const) {
+		out.flush();
+		next_seq++;
+		Frame* ret = 0;
+		while(true) {
+			Frame frame;
+			frame.data = data;
+			frame.size = buf.position();
+			frame.seq = next_seq;
+			frame.is_const = is_const;
+			send(&frame, dst);
+			frame.data = 0;
 			// TODO
-			left--;
 		}
-		return 0;
+		if(ret) {
+			buf.wrap(ret->data, ret->size);
+		}
+		return ret;
 	}
 	
 private:
 	vnl::Address dst;
-	vnl::Stream stream;
 	vnl::Page* data;
+	vnl::io::ByteBuffer buf;
+	vnl::io::TypeInput in;
+	vnl::io::TypeOutput out;
 	uint32_t next_seq = 0;
 	int64_t timeout = 3000;
-	int max_retries = -1;
+	bool is_connected = false;
 	
 };
 

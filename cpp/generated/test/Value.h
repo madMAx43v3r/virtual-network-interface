@@ -8,20 +8,18 @@
 #ifndef CPP_GENERATED_TEST_VALUE_H_
 #define CPP_GENERATED_TEST_VALUE_H_
 
-#include <vni/Type.h>
+#include <vni/Class.h>
 
 
 namespace test {
 
-class Value : public vni::Type {
+class Value : public vni::Class {
 public:
 	int32_t x;
 	int32_t y;
 	int32_t z;
 	
 	static const uint32_t HASH = 0x51212323;
-	
-	VNI_SAMPLE(Value);
 	
 	Value() {
 		vni_hash_ = HASH;
@@ -41,24 +39,6 @@ public:
 		}
 	}
 	
-	static Value* read(vnl::io::TypeInputStream& in) {
-		Value* obj = 0;
-		uint32_t hash = 0;
-		uint32_t size = 0;
-		int id = in.getEntry(size);
-		if(id == VNL_IO_CLASS) {
-			in.getHash(hash);
-			obj = create(hash);
-			if(obj) {
-				obj->deserialize(in, size);
-			}
-		}
-		if(!obj) {
-			in.skip(id, size);
-		}
-		return obj;
-	}
-	
 	static void destroy(Value* obj) {
 		if(obj) {
 			switch(obj->vni_hash) {
@@ -71,7 +51,7 @@ public:
 		return "test.Value";
 	}
 	
-	virtual void serialize(vnl::io::TypeOutputStream& out) const {
+	virtual void serialize(vnl::io::TypeOutput& out) const {
 		out.putEntry(VNL_IO_CLASS, 3);
 		out.putHash(HASH);
 		out.putHash(0x4354534);
@@ -82,8 +62,8 @@ public:
 		out.putInt(z);
 	}
 	
-	virtual void deserialize(vnl::io::TypeInputStream& in, uint32_t num_entries) {
-		for(int i = 0; i < num_entries && !in.error(); ++i) {
+	virtual void deserialize(vnl::io::TypeInput& in, uint32_t size) {
+		for(int i = 0; i < size && !in.error(); ++i) {
 			uint32_t hash = 0;
 			in.getHash(hash);
 			switch(hash) {

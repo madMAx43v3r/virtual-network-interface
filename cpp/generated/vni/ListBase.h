@@ -21,28 +21,40 @@ public:
 	
 	virtual void push_back(T* elem) = 0;
 	virtual void clear() = 0;
+	virtual int32_t test(int32_t val) const = 0;
 	
 	class Client : public vni::Client {
 	public:
 		void push_back(T* elem) {
-			vnl::io::PageBuffer buf(data);
-			vnl::io::TypeOutputStream out(buf);
+			buf.wrap(data);
 			Writer wr(out);
 			wr.push_back(elem);
-			Frame* res = call(buf, false);
-			if(res) {
-				// nothing
+			vnl::Packet* pkt = call(false);
+			if(pkt) {
+				pkt->ack();
 			}
 		}
 		void clear() {
 			// same
+		}
+		int32_t test(int32_t val) {
+			buf.wrap(data);
+			Writer wr(out);
+			wr.test(val);
+			vnl::Packet* pkt = call(true);
+			int32_t res = 0;
+			if(pkt) {
+				in.getInteger(res);
+				pkt->ack();
+			}
+			return res;
 		}
 	};
 	
 protected:
 	class Writer {
 	public:
-		Writer(vnl::io::TypeOutputStream& out) : out(out) {}
+		Writer(vnl::io::TypeOutput& out) : out(out) {}
 		void push_back(T* elem) {
 			out.putEntry(VNL_IO_CALL, 1);
 			out.putHash(0x1337);
@@ -52,13 +64,18 @@ protected:
 			out.putEntry(VNL_IO_CALL, 0);
 			out.putHash(0x1338);
 		}
+		void test(int32_t val) {
+			out.putEntry(VNL_IO_CALL, 1);
+			out.putHash(0x1339);
+			out.putInt(val);
+		}
 	protected:
-		vnl::io::TypeOutputStream& out;
+		vnl::io::TypeOutput& out;
 	};
 	
 	class Serializer : public Writer {
 	public:
-		Serializer(vnl::io::TypeOutputStream& out) : Writer(out) {
+		Serializer(vnl::io::TypeOutput& out) : Writer(out) {
 			out.putEntry(VNL_IO_INTERFACE, VNL_IO_BEGIN);
 			out.putHash(HASH);
 		}
@@ -67,7 +84,7 @@ protected:
 		}
 	};
 	
-	virtual bool call(vnl::io::TypeInputStream& in, uint32_t hash, uint32_t num_args) {
+	virtual bool call(vnl::io::TypeInput& in, uint32_t hash, int num_args) {
 		switch(hash) {
 		case 0x1337:
 			if(num_args == 1) {
@@ -86,8 +103,17 @@ protected:
 		return false;
 	}
 	
-	virtual bool const_call(vnl::io::TypeInputStream& in, uint32_t hash, uint32_t num_args, vnl::io::TypeOutputStream& out) {
+	virtual bool const_call(vnl::io::TypeInput& in, uint32_t hash, int num_args, vnl::io::TypeOutput& out) {
 		switch(hash) {
+		case 0x1339:
+			if(num_args == 1) {
+				int32_t val = 0;
+				in.getInteger(val);
+				int32_t res = test(val);
+				out.putInt(res);
+				return true;
+			}
+			break;
 		}
 		return false;
 	}

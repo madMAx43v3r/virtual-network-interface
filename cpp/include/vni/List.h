@@ -19,11 +19,11 @@ class List : public vni::ListBase<T> {
 public:
 	
 	virtual void push_back(T* elem) {
-		
+		list.push_back(elem);
 	}
 	
 	virtual void clear() {
-		
+		list.clear();
 	}
 	
 	virtual void serialize(vnl::io::TypeOutputStream& out) const {

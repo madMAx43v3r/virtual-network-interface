@@ -13,56 +13,28 @@
 #include <vnl/Pool.h>
 #include <vnl/util/spinlock.h>
 
-
-#define VNI_SAMPLE(type) typedef vnl::PacketType<type, vni::PID_SAMPLE> sample_t;
+#include <vni/Sample.h>
+#include <vni/Frame.h>
 
 
 namespace vni {
-
-static const uint32_t PID_SAMPLE = 0xa37b95eb;
-
 
 class Type : public vnl::io::Serializable {
 public:
 	virtual ~Type() {}
 	
+	virtual const char* vni_type_name() const = 0;
+	
 	uint32_t vni_hash() const {
 		return vni_hash_;
 	}
 	
-	virtual const char* vni_type_name() const = 0;
+	static Type* create(uint32_t hash);
+	
+	static void destroy(Type* obj);
 	
 protected:
 	uint32_t vni_hash_;
-	
-};
-
-
-class Interface : public Type {
-public:
-	virtual void deserialize(vnl::io::TypeInputStream& in, uint32_t num_entries) {
-		while(!in.error()) {
-			uint32_t hash = 0;
-			uint32_t size = 0;
-			int id = in.getEntry(size);
-			if(id == VNL_IO_CALL) {
-				in.getHash(hash);
-				if(!call(in, hash, size)) {
-					for(uint32_t i = 0; i < size; ++i) {
-						in.skip();
-					}
-				}
-			} else if(id == VNL_IO_INTERFACE && size == VNL_IO_END) {
-				break;
-			} else {
-				in.skip(id, size);
-			}
-		}
-	}
-	
-protected:
-	virtual bool call(vnl::io::TypeInputStream& in, uint32_t hash, uint32_t num_args) = 0;
-	virtual bool const_call(vnl::io::TypeInputStream& in, uint32_t hash, uint32_t num_args, vnl::io::TypeOutputStream& out) = 0;
 	
 };
 

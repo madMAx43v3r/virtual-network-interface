@@ -179,11 +179,17 @@ public:
 		ss << type->get_full_name() << "[" << size << "]";
 		return ss.str();
 	}
+	virtual uint64_t get_hash() {
+		return type->get_hash();
+	}
 };
 
 
+class Type;
+
 class Field : public Base {
 public:
+	Type* scope = 0;
 	Base* type = 0;
 	string name;
 	
@@ -191,9 +197,9 @@ public:
 	
 	virtual string get_name() { return name; }
 	virtual string get_full_name() { return type->get_full_name() + " " + name; }
-	
 	virtual uint64_t get_hash() {
 		CRC64 hash;
+		hash.update(scope->get_hash());
 		hash.update(type->get_hash());
 		hash.update(name);
 		return hash.getValue();
@@ -214,6 +220,7 @@ public:
 
 class Method : public Base {
 public:
+	Type* scope = 0;
 	Base* type = 0;
 	string name;
 	vector<Param*> params;
@@ -231,9 +238,9 @@ public:
 		}
 		return str + ")";
 	}
-	
 	virtual uint64_t get_hash() {
 		CRC64 hash;
+		hash.update(scope->get_hash());
 		hash.update(name);
 		for(Param* param : params) {
 			hash.update(param->type->get_hash());
@@ -306,21 +313,6 @@ public:
 	
 	Interface() {
 		
-	}
-	
-	virtual string get_name() {
-		string str = name;
-		if(params.size()) {
-			str += "<";
-			for(int i = 0; i < params.size(); ++i) {
-				str += params[i];
-				if(i < params.size()-1) {
-					str += ", ";
-				}
-			}
-			str += ">";
-		}
-		return str;
 	}
 };
 

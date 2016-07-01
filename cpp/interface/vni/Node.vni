@@ -1,7 +1,0 @@
-package vni;
-
-extern vnl.Node;
-
-interface Node extends vnl.Node {
-	
-}

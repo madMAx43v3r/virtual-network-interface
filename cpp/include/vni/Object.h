@@ -9,24 +9,24 @@
 #define INCLUDE_VNI_OBJECT_H_
 
 #include <vni/Interface.h>
-#include <vnl/Stream.h>
+#include <vnl/Module.h>
 
 
 namespace vni {
 
-class Object : public Interface {
+class Object : public Interface, public vnl::Module {
 public:
-	Object()
-		:	in(&in_buf), out(&out_buf)
+	Object(const vnl::String& name)
+		:	Module(name),
+			in(&in_buf), out(&out_buf)
 	{
 	}
 	
-	void connect(vnl::Engine* engine) {
-		stream.connect(engine);
-	}
+protected:
+	virtual bool handle(vni::Class* sample, vnl::Address src_addr, vnl::Address dst_addr) = 0;
 	
-	bool receive(vnl::Packet* pkt) {
-		if(pkt->pkt_id == vni::PID_TYPE_SAMPLE) {
+	virtual bool handle(vnl::Packet* pkt) {
+		if(pkt->pkt_id == vni::PID_SAMPLE) {
 			handle(((Sample*)pkt)->data, pkt->src_addr, pkt->dst_addr);
 		} else if(pkt->pkt_id == vni::PID_FRAME) {
 			Frame* req = (Frame*)pkt->payload;
@@ -67,23 +67,7 @@ public:
 		return false;
 	}
 	
-protected:
-	void send(vnl::Packet* pkt, vnl::Address dst) {
-		stream.send(pkt, dst);
-	}
-	
-	void send_async(vnl::Packet* pkt, vnl::Address dst) {
-		stream.send_async(pkt, dst);
-	}
-	
-	virtual bool handle(vni::Class* sample, vnl::Address src_addr, vnl::Address dst_addr) = 0;
-	
-protected:
-	vnl::PageAlloc memory;
-	vnl::MessageBuffer buffer;
-	
 private:
-	vnl::Stream stream;
 	vnl::io::ByteBuffer in_buf;
 	vnl::io::ByteBuffer out_buf;
 	vnl::io::TypeInput in;

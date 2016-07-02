@@ -14,11 +14,11 @@
 
 namespace vni {
 
-static const uint32_t PID_TYPE_SAMPLE = 0xa37b95eb;
+static const uint32_t PID_SAMPLE = 0xa37b95eb;
 
 class Sample : public vnl::Packet {
 public:
-	Sample() : Packet(PID_TYPE_SAMPLE) {
+	Sample() : Packet(PID_SAMPLE) {
 		payload = &data;
 	}
 	

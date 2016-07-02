@@ -11,7 +11,7 @@
 #include <vni/Class.h>
 #include <test/Value.h>
 #include <test/value_t.h>
-#include <vni/ListBase.h>
+#include <vni/List.h>
 
 
 namespace test {

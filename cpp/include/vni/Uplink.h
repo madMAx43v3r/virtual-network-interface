@@ -8,6 +8,7 @@
 #ifndef INCLUDE_VNI_UPLINK_H_
 #define INCLUDE_VNI_UPLINK_H_
 
+#include <vni/Port.h>
 #include <vnl/Module.h>
 #include <vnl/Map.h>
 #include <vnl/io/Socket.h>
@@ -17,80 +18,71 @@ namespace vni {
 
 class Uplink : public vnl::Module {
 public:
-	Uplink(Port* port)
-		:	Module(port->uplink.mac),
-			port(port), socket(port->fd), out(&socket)
+	Uplink(const vnl::String& name)
+		:	Module(name),
+			socket(-1), out(&socket)
 	{
-		epoch = vnl::currentTime();
+		my_addr = vnl::Address(vnl::get_local_domain(), get_mac());
 	}
 	
-	static const int beat_interval = 1000;
-	static const int maintain_interval = 10000;
-	static const int fwd_timeout = 100;
+	typedef vnl::MessageType<vnl::Address, 0x6245e4cc> open_t;
+	typedef vnl::MessageType<vnl::Address, 0xc1d15cc6> close_t;
 	
-	typedef vnl::PacketType<vnl::Address, 0x6245e4cc> open_t;
-	typedef vnl::PacketType<vnl::Address, 0xc1d15cc6> close_t;
-	
-	typedef vnl::PacketType<vnl::Address, 0x3273cc98> forward_t;
-	typedef vnl::PacketType<vnl::Address, 0xf64ddc0f> heart_beat_t;
+	typedef vnl::MessageType<int, 0x3273cc98> enable_t;
 	
 protected:
 	virtual void main(vnl::Engine* engine) {
-		set_timeout(beat_interval*1000, std::bind(&Uplink::heart_beat, this), vnl::Timer::REPEAT);
-		set_timeout(maintain_interval*1000, std::bind(&Uplink::maintain, this), vnl::Timer::REPEAT);
+		open(my_addr);
 		run();
+		close(my_addr);
+	}
+	
+	virtual bool handle(vnl::Message* msg) {
+		if(msg->msg_id == enable_t::MID) {
+			int fd = ((enable_t*)msg)->data;
+			socket = vnl::io::Socket(fd);
+			out = vnl::io::TypeOutput(&socket);
+			for(vnl::Address addr : table.keys()) {
+				out.putEntry(VNL_IO_INTERFACE, VNL_IO_BEGIN);
+				out.putHash(open_t::MID);
+				addr.serialize(out);
+				out.putEntry(VNL_IO_INTERFACE, VNL_IO_END);
+			}
+			out.flush();
+			log(DEBUG).out << "Enabled on socket " << vnl::dec(fd) << vnl::endl;
+		} else if(msg->msg_id == open_t::MID) {
+			vnl::Address addr = ((open_t*)msg)->data;
+			out.putEntry(VNL_IO_INTERFACE, VNL_IO_BEGIN);
+			out.putHash(open_t::MID);
+			addr.serialize(out);
+			out.putEntry(VNL_IO_INTERFACE, VNL_IO_END);
+			out.flush();
+			table[addr] = 1;
+		} else if(msg->msg_id == close_t::MID) {
+			vnl::Address addr = ((close_t*)msg)->data;
+			out.putEntry(VNL_IO_INTERFACE, VNL_IO_BEGIN);
+			out.putHash(close_t::MID);
+			addr.serialize(out);
+			out.putEntry(VNL_IO_INTERFACE, VNL_IO_END);
+			out.flush();
+			table.erase(addr);
+		}
+		return Module::handle(msg);
 	}
 	
 	virtual bool handle(vnl::Packet* pkt) {
-		if(pkt->dst_addr == port->uplink) {
-			if(pkt->pkt_id == open_t::PID) {
-				vnl::Address addr = ((open_t*)pkt)->data;
-				out.putEntry(VNL_IO_INTERFACE, VNL_IO_BEGIN);
-				out.putHash(open_t::PID);
-				addr.serialize(out);
-				out.putEntry(VNL_IO_INTERFACE, VNL_IO_END);
-				out.flush();
-			} else if(pkt->pkt_id == close_t::PID) {
-				vnl::Address addr = ((close_t*)pkt)->data;
-				out.putEntry(VNL_IO_INTERFACE, VNL_IO_BEGIN);
-				out.putHash(close_t::PID);
-				addr.serialize(out);
-				out.putEntry(VNL_IO_INTERFACE, VNL_IO_END);
-				out.flush();
-			} else if(pkt->pkt_id == forward_t::PID) {
-				vnl::Address addr = ((forward_t*)pkt)->data;
-				forward[addr] = vnl::currentTime() - epoch;
-				open(addr);
-			}
-		} else if(pkt->pkt_id == vni::PID_SAMPLE || pkt->pkt_id == vni::PID_FRAME) {
+		if(pkt->pkt_id == vni::PID_SAMPLE || pkt->pkt_id == vni::PID_FRAME) {
 			pkt->serialize(out);
 			out.flush();
-		}
-		if(out.error()) {
-			log(ERROR).out << "output error, closing.";
-			die();
 		}
 		return false;
 	}
 	
-	void heart_beat() {
-		out.putEntry(VNL_IO_INTERFACE, VNL_IO_BEGIN);
-		out.putHash(heart_beat_t::PID);
-		out.putEntry(VNL_IO_INTERFACE, VNL_IO_END);
-		out.flush();
-	}
-	
-	void maintain() {
-		// TODO
-	}
-	
 private:
-	Port* port;
+	vnl::Address my_addr;
 	vnl::io::Socket socket;
 	vnl::io::TypeOutput out;
-	vnl::Map<vnl::Address, int> forward;
-	
-	int64_t epoch;
+	vnl::Map<vnl::Address, int> table;
 	
 };
 

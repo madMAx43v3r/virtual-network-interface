@@ -28,8 +28,6 @@ public:
 	vnl::Endpoint uplink;
 	vnl::Endpoint downlink;
 	
-	int fd = -1;
-	
 };
 
 

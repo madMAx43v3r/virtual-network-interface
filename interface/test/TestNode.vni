@@ -2,8 +2,11 @@ package test;
 
 import test.TestType;
 
-interface TestNode extends vni.Object {
+object TestNode {
 	
-	void handle(TestType);
+	int level = -1;
+	vni.String instance = "blubb";
+	
+	void handle(TestType ev);
 	
 }

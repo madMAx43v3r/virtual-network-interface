@@ -15,21 +15,36 @@ namespace vni {
 
 class Interface : public Type {
 public:
+	virtual void serialize(vnl::io::TypeOutput& out) const {
+		out.putEntry(VNL_IO_INTERFACE, VNL_IO_BEGIN);
+		out.putHash(vni_hash_);
+		out.putEntry(VNL_IO_INTERFACE, VNL_IO_END);
+	}
 	
 	virtual void deserialize(vnl::io::TypeInput& in, int size) {
+		int stack = 1;
 		while(!in.error()) {
-			uint32_t hash = 0;
 			int size = 0;
 			int id = in.getEntry(size);
 			if(id == VNL_IO_CALL) {
+				uint32_t hash = 0;
 				in.getHash(hash);
 				if(!vni_call(in, hash, size)) {
 					for(uint32_t i = 0; i < size; ++i) {
 						in.skip();
 					}
 				}
-			} else if(id == VNL_IO_INTERFACE && size == VNL_IO_END) {
-				break;
+			} else if(id == VNL_IO_INTERFACE) {
+				if(size == VNL_IO_BEGIN) {
+					uint32_t hash = 0;
+					in.getHash(hash);
+					stack++;
+				} else if(size == VNL_IO_END) {
+					stack--;
+					if(stack == 0) {
+						break;
+					}
+				}
 			} else {
 				in.skip(id, size);
 			}

@@ -31,7 +31,7 @@ public:
 	}
 	
 	~TestType() {
-		Value::destroy(val);
+		Value::destroy(test::TestType::val);
 	}
 	
 	static TestType* create() {
@@ -40,7 +40,7 @@ public:
 	
 	static TestType* create(uint32_t hash) {
 		switch(hash) {
-			case HASH: return vni::TypePool<TestType>::create();
+			case test::TestType::HASH: return vni::TypePool<TestType>::create();
 			default: return 0;
 		}
 	}
@@ -48,7 +48,7 @@ public:
 	static void destroy(TestType* obj) {
 		if(obj) {
 			switch(obj->vni_hash) {
-				case HASH: vni::TypePool<TestType>::destroy(obj);
+				case test::TestType::HASH: vni::TypePool<TestType>::destroy(obj);
 			}
 		}
 	}
@@ -69,17 +69,17 @@ public:
 		out.putEntry(VNL_IO_CLASS, 3);
 		out.putHash(HASH);
 		out.putHash(0x4786877);
-		if(val) {
-			val->serialize(out);
+		if(test::TestType::val) {
+			test::TestType::val->serialize(out);
 		} else {
 			out.putNull();
 		}
 		out.putHash(0x7246790);
-		val2.serialize(out);
+		test::TestType::val2.serialize(out);
 		out.putHash(0x3674473);
-		list.serialize(out);
+		test::TestType::list.serialize(out);
 		out.putHash(0x3674474);
-		list2.serialize(out);
+		test::TestType::list2.serialize(out);
 	}
 	
 	virtual void deserialize(vnl::io::TypeInput& in, int size) {
@@ -87,10 +87,10 @@ public:
 			uint32_t hash = 0;
 			in.getHash(hash);
 			switch(hash) {
-				case 0x4786877: val = test::Value::read(in); break;
-				case 0x7246790: test::value_t::read(in, &val2); break;
-				case 0x3674473: vni::List<Value>::read(in, &list); break;
-				case 0x3674474: vni::List<value_t>::read(in, &list2); break;
+				case 0x4786877: test::TestType::val = test::Value::read(in); break;
+				case 0x7246790: test::value_t::read(in, &test::TestType::val2); break;
+				case 0x3674473: vni::List<Value>::read(in, &test::TestType::list); break;
+				case 0x3674474: vni::List<value_t>::read(in, &test::TestType::list2); break;
 				default: in.skip();
 			}
 		}

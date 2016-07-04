@@ -45,13 +45,16 @@ protected:
 	virtual void main(vnl::Engine* engine) {
 		vnl::Reference<Uplink> uplink(engine, fork(new Uplink(vnl::String(port) << "/uplink")));
 		int64_t last_maintain = vnl::currentTime();
-		while(run) {
+		while(dorun) {
 			fd = connect();
+			if(fd < 0) {
+				break;
+			}
 			Uplink::enable_t* enable = buffer.create<Uplink::enable_t>(fd);
 			send_async(enable, uplink);
 			vnl::io::Socket socket(fd);
 			vnl::io::TypeInput in(&socket);
-			while(run) {
+			while(dorun) {
 				int size = 0;
 				int id = in.getEntry(size);
 				if(id == VNL_IO_INTERFACE && size == VNL_IO_BEGIN) {
@@ -72,7 +75,9 @@ protected:
 					maintain();
 					last_maintain = now;
 				}
+				poll(0);
 			}
+			::close(fd);
 		}
 		for(vnl::Address addr : table.keys()) {
 			vnl::Router::close_t msg(std::make_pair(uplink.get(), addr));
@@ -89,6 +94,7 @@ protected:
 		case Uplink::open_t::MID: {
 			vnl::Address addr;
 			addr.deserialize(in, 0);
+			in.skip(VNL_IO_INTERFACE, 0);
 			vnl::Router::open_t msg(std::make_pair(uplink, addr));
 			send(&msg, vnl::Router::instance);
 			table[addr] = 1;
@@ -97,6 +103,7 @@ protected:
 		case Uplink::close_t::MID: {
 			vnl::Address addr;
 			addr.deserialize(in, 0);
+			in.skip(VNL_IO_INTERFACE, 0);
 			vnl::Router::close_t msg(std::make_pair(uplink, addr));
 			send(&msg, vnl::Router::instance);
 			table.erase(addr);
@@ -133,7 +140,7 @@ protected:
 	virtual int connect() = 0;
 	
 protected:
-	volatile bool run = true;
+	volatile bool dorun = true;
 	vnl::String port;
 	
 private:

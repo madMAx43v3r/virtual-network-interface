@@ -8,8 +8,7 @@
 #ifndef CPP_GENERATED_VNI_LISTBASE_H_
 #define CPP_GENERATED_VNI_LISTBASE_H_
 
-#include <vni/Type.h>
-#include <vni/Frame.h>
+#include <vni/Interface.h>
 
 
 namespace vni {
@@ -63,8 +62,8 @@ protected:
 	class Writer {
 	public:
 		Writer(vnl::io::TypeOutput& out) : _out(out) {
-			out.putEntry(VNL_IO_INTERFACE, VNL_IO_BEGIN);
-			out.putHash(HASH);
+			_out.putEntry(VNL_IO_INTERFACE, VNL_IO_BEGIN);
+			_out.putHash(HASH);
 		}
 		~Writer() {
 			_out.putEntry(VNL_IO_INTERFACE, VNL_IO_END);

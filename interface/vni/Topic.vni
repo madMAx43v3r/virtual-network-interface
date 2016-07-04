@@ -1,10 +1,6 @@
 package vni;
 
-import vni.Address;
-
 interface Topic<T> {
-	
-	void set(long B);
 	
 	String getTypeName() const;
 	

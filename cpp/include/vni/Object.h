@@ -32,11 +32,13 @@ protected:
 			handle(((Sample*)pkt)->data, pkt->src_addr, pkt->dst_addr);
 		} else if(pkt->pkt_id == vni::PID_FRAME) {
 			Frame* request = (Frame*)pkt->payload;
+			Frame* result = buffer.create<Frame>();
+			result->seq = request->seq;
 			uint32_t& last_seq = clients[request->src_addr];
-			if(request <= last_seq) {
+			if(request->seq <= last_seq) {
+				send_async(result, request->src_addr);
 				return false;
 			}
-			Frame* result = buffer.create<Frame>();
 			in_buf.wrap(request->data, request->size);
 			int size = 0;
 			int id = in.getEntry(size);
@@ -67,7 +69,6 @@ protected:
 					result->size = out_buf.position();
 				}
 			}
-			result->seq = request->seq;
 			send_async(result, request->src_addr);
 			last_seq = request->seq;
 		}

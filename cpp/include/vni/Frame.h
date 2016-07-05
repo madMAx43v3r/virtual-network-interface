@@ -44,8 +44,6 @@ protected:
 	virtual void write(vnl::io::TypeOutput& out) const {
 		if(data) {
 			out.writeBinary(data, size);
-		} else {
-			out.putNull();
 		}
 	}
 	

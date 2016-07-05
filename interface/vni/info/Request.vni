@@ -1,0 +1,11 @@
+package vni.info;
+
+class Request {
+	
+	enum type_t {
+		GET_PROCESS
+	}
+	
+	type_t type;
+	
+}

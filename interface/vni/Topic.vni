@@ -1,7 +1,0 @@
-package vni;
-
-interface Topic<T> {
-	
-	String getTypeName() const;
-	
-}

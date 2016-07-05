@@ -8,19 +8,20 @@
 #ifndef CPP_GENERATED_TEST_VALUE_T_H_
 #define CPP_GENERATED_TEST_VALUE_T_H_
 
-#include <vni/Struct.h>
+#include <vni/Class.h>
 
 
 namespace test {
 
-class value_t : public vni::Struct {
+class value_t : public vni::Class {
 public:
 	float pos[3];
 	
-	static const uint32_t HASH = 0x51677428;
+	static const uint32_t VNI_HASH = 0x51677428;
+	static const int VNI_NUM_FIELDS = 1;
 	
 	value_t() {
-		vni_hash_ = HASH;
+		vni_hash_ = VNI_HASH;
 		memset(pos, 0, sizeof(pos));
 	}
 	
@@ -35,21 +36,25 @@ public:
 	}
 	
 	static void read(vnl::io::TypeInput& in, value_t* obj) {
-		vni::Struct::read<value_t>(in, obj);
+		vni::Class::read(in, obj);
 	}
 	
 	static value_t* read(vnl::io::TypeInput& in) {
-		return vni::Struct::read<value_t>(in);
+		return vni::Class::read<value_t>(in);
 	}
 	
 	virtual const char* vni_type_name() const {
 		return "test.value_t";
 	}
 	
-	virtual void serialize(vnl::io::TypeOutput& out) const {
-		out.putEntry(VNL_IO_STRUCT, 1);
+	void serialize_body(vnl::io::TypeOutput& out) const {
 		out.putHash(0x8356785);
 		out.putArray(pos, 3);
+	}
+	
+	virtual void serialize(vnl::io::TypeOutput& out) const {
+		out.putEntry(VNL_IO_STRUCT, 1);
+		serialize_body(out);
 	}
 	
 	virtual void deserialize(vnl::io::TypeInput& in, int size) {

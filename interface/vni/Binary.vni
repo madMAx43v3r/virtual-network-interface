@@ -1,0 +1,5 @@
+package vni;
+
+interface Binary {
+	
+}

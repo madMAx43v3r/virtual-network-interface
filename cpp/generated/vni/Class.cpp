@@ -5,17 +5,17 @@
  *      Author: mad
  */
 
-#include <vni/Type.h>
+#include <vni/Class.h>
 
 
-static vni::Type* vni::Type::create(uint32_t hash) {
+static vni::Class* vni::Class::create(uint32_t hash) {
 	switch(hash) {
 	
 	}
 	return 0;
 }
 
-static void vni::Type::destroy(Type* obj) {
+static void vni::Class::destroy(Class* obj) {
 	if(obj) {
 		switch(obj->vni_hash_) {
 		

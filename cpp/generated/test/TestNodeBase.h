@@ -8,6 +8,7 @@
 #ifndef CPP_GENERATED_TEST_TESTNODEBASE_H_
 #define CPP_GENERATED_TEST_TESTNODEBASE_H_
 
+#include <vni/Class.h>
 #include <vni/Object.h>
 #include <test/TestType.h>
 
@@ -29,7 +30,7 @@ public:
 	public:
 	};
 	
-	class Config : public vni::Struct {
+	class Config : public vni::Client {
 	public:
 		int level;
 		vni::String instance;
@@ -39,6 +40,11 @@ public:
 		}
 		// all the other struct stuff
 	};
+	
+	virtual void serialize(vnl::io::TypeOutput& out) const {
+		Writer _wr(out);
+		_wr.setConfig(config);
+	}
 	
 protected:
 	test::TestNodeBase::Config config;
@@ -70,7 +76,7 @@ protected:
 			if(num_args == 1) {
 				test::TestNodeBase::Config conf;
 				test::TestNodeBase::Config::read(in, &conf);
-				setConfig(conf);
+				test::TestNodeBase::setConfig(conf);
 				return true;
 			}
 			break;
@@ -86,7 +92,7 @@ protected:
 	
 	virtual bool handle(vni::Class* sample, vnl::Address src_addr, vnl::Address dst_addr) {
 		switch(sample->vni_hash_) {
-		case test::TestType::HASH: handle(sample, src_addr, dst_addr); return true;
+		case test::TestType::VNI_HASH: handle(sample, src_addr, dst_addr); return true;
 		}
 		return false;
 	}

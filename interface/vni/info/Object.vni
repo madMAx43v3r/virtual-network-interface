@@ -1,0 +1,8 @@
+package vni.info;
+
+class Object {
+	
+	long hash;
+	String name;
+	
+}

@@ -29,10 +29,6 @@ public:
 		return vni_hash_;
 	}
 	
-	static Type* create(uint32_t hash);
-	
-	static void destroy(Type* obj);
-	
 protected:
 	uint32_t vni_hash_;
 	
@@ -50,7 +46,7 @@ public:
 	}
 	
 	static void destroy(T* obj) {
-		assert(obj->vni_hash == T::HASH);
+		assert(obj->vni_hash() == T::HASH);
 		sync.lock();
 		pool.destroy(obj);
 		sync.unlock();
@@ -63,8 +59,6 @@ private:
 
 template<typename T> vnl::util::spinlock TypePool<T>::sync;
 template<typename T> vnl::Pool<T> TypePool<T>::pool;
-
-
 
 
 }

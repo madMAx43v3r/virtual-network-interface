@@ -8,16 +8,18 @@
 #ifndef INCLUDE_VNI_OBJECT_H_
 #define INCLUDE_VNI_OBJECT_H_
 
-#include <vni/Interface.h>
+#include <vni/ObjectBase.h>
+#include <vni/Binary.h>
 #include <vnl/Module.h>
 
 
 namespace vni {
 
-class Object : public Interface, public vnl::Module {
+class Object : public ObjectBase, public vnl::Module {
 public:
-	Object(const vnl::String& name)
-		:	Module(name),
+	Object(const vnl::String& domain, const vnl::String& name)
+		:	Module(vnl::String(domain) << "/" << name),
+			my_address(domain, name),
 			in(&in_buf), out(&out_buf)
 	{
 	}
@@ -66,6 +68,28 @@ protected:
 		}
 		return false;
 	}
+	
+	virtual Binary vni_serialize() const {
+		Binary blob;
+		blob.data = vnl::Page::alloc();
+		vnl::io::ByteBuffer buf;
+		vnl::io::TypeOutput out(&buf);
+		buf.wrap(blob.data);
+		serialize(out);
+		out.flush();
+		blob.size = buf.position();
+		return blob;
+	}
+	
+	virtual void vni_deserialize(vni::Binary& blob) {
+		vnl::io::ByteBuffer buf;
+		vnl::io::TypeInput in(&buf);
+		buf.wrap(blob.data, blob.size);
+		read(in, this);
+	}
+	
+protected:
+	vnl::Address my_address;
 	
 private:
 	vnl::io::ByteBuffer in_buf;

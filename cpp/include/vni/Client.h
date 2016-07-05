@@ -8,6 +8,7 @@
 #ifndef INCLUDE_VNI_CLIENT_H_
 #define INCLUDE_VNI_CLIENT_H_
 
+#include <vni/ClientBase.h>
 #include <vni/Frame.h>
 #include <vnl/Stream.h>
 #include <vnl/Router.h>
@@ -15,7 +16,7 @@
 
 namespace vni {
 
-class Client : public vnl::Stream {
+class Client : public ClientBase, public vnl::Stream {
 public:
 	Client()
 		:	in(&buf), out(&buf)
@@ -30,11 +31,18 @@ public:
 		data->free_all();
 	}
 	
-	void vni_connect(vnl::Engine* engine, vnl::Address dst_) {
+	virtual void vni_set_address(int64_t A, int64_t B) {
+		vni_set_address(vnl::Address(A, B));
+	}
+	
+	void vni_set_address(vnl::Address dst_) {
+		dst = dst_;
+	}
+	
+	void vni_connect(vnl::Engine* engine) {
 		if(is_connected) {
 			Stream::close(dst);
 		}
-		dst = dst_;
 		Stream::connect(engine);
 		Stream::open(dst);
 		is_connected = true;
@@ -42,6 +50,11 @@ public:
 	
 	void vni_set_timeout(int64_t millis) {
 		timeout = millis;
+	}
+	
+	virtual void serialize(vnl::io::TypeOutput& out) const {
+		Writer _wr(out);
+		_wr.vni_set_address(dst.A, dst.B);
 	}
 	
 protected:

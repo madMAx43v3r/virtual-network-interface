@@ -1,0 +1,9 @@
+package vni;
+
+object Object {
+	
+	vni.Binary vni_serialize() const;
+	
+	void vni_deserialize(vni.Binary blob);
+	
+}

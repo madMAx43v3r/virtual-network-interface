@@ -29,6 +29,7 @@ static string FILE = "<unknown>";
 static string LINE = -1;
 
 static Package* PACKAGE = 0;
+static Package* VNI_PACKAGE = 0;
 static Type* TYPE = 0;
 
 
@@ -180,7 +181,10 @@ public:
 		return ss.str();
 	}
 	virtual uint64_t get_hash() {
-		return type->get_hash();
+		CRC64 hash;
+		hash.update("vni.ast.Array");
+		hash.update(type->get_hash());
+		return hash.getValue();
 	}
 };
 
@@ -242,9 +246,6 @@ public:
 		CRC64 hash;
 		hash.update(scope->get_hash());
 		hash.update(name);
-		for(Param* param : params) {
-			hash.update(param->type->get_hash());
-		}
 		return hash.getValue();
 	}
 };
@@ -269,13 +270,6 @@ public:
 	
 	virtual string get_name() { return name; }
 	virtual string get_full_name() { return package->get_full_name() + "." + get_name(); }
-};
-
-
-class Typedef : public Type {
-public:
-	Base* type = 0;
-	
 };
 
 
@@ -347,6 +341,9 @@ static Base* resolve(const string& ident) {
 	Base* res = INDEX[hash64(ident)];
 	if(!res && TYPE) {
 		res = TYPE->index[ident];
+	}
+	if(!res && VNI_PACKAGE) {
+		res = VNI_PACKAGE->index[ident];
 	}
 	if(!res && PACKAGE) {
 		res = PACKAGE->index[ident];

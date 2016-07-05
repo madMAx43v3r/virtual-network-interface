@@ -20,10 +20,10 @@ public:
 	virtual void clear() = 0;
 	virtual int32_t test(int32_t val) const = 0;
 	
-	static const uint32_t HASH = 0x16233789;
+	static const uint32_t VNI_HASH = 0x16233789;
 	
 	ListBase() {
-		vni_hash_ = HASH;
+		vni_hash_ = VNI_HASH;
 	}
 	
 	virtual const char* vni_type_name() const {
@@ -63,7 +63,7 @@ protected:
 	public:
 		Writer(vnl::io::TypeOutput& out) : _out(out) {
 			_out.putEntry(VNL_IO_INTERFACE, VNL_IO_BEGIN);
-			_out.putHash(HASH);
+			_out.putHash(VNI_HASH);
 		}
 		~Writer() {
 			_out.putEntry(VNL_IO_INTERFACE, VNL_IO_END);
@@ -89,14 +89,16 @@ protected:
 	virtual bool vni_call(vnl::io::TypeInput& in, uint32_t hash, int num_args) {
 		switch(hash) {
 		case 0x1337:
-			if(num_args == 1) {
+			switch(num_args) {
+			case 1:
 				T* obj = T::read(in);
 				push_back(obj);
 				return true;
 			}
 			break;
 		case 0x1338:
-			if(num_args == 0) {
+			switch(num_args) {
+			case 0:
 				clear();
 				return true;
 			}
@@ -108,7 +110,8 @@ protected:
 	virtual bool vni_const_call(vnl::io::TypeInput& in, uint32_t hash, int num_args, vnl::io::TypeOutput& out) {
 		switch(hash) {
 		case 0x1339:
-			if(num_args == 1) {
+			switch(num_args) {
+			case 1:
 				int32_t val = 0;
 				in.getInteger(val);
 				int32_t res = test(val);

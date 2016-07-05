@@ -24,10 +24,11 @@ public:
 	vni::List<Value> list;
 	vni::List<value_t> list2;
 	
-	static const uint32_t HASH = 0x5df232ab;
+	static const uint32_t VNI_HASH = 0x5df232ab;
+	static const int VNI_NUM_FIELDS = 4;
 	
 	TestType() {
-		vni_hash_ = HASH;
+		vni_hash_ = VNI_HASH;
 	}
 	
 	~TestType() {
@@ -35,20 +36,20 @@ public:
 	}
 	
 	static TestType* create() {
-		return create(HASH);
+		return create(VNI_HASH);
 	}
 	
 	static TestType* create(uint32_t hash) {
 		switch(hash) {
-			case test::TestType::HASH: return vni::TypePool<TestType>::create();
+			case test::TestType::VNI_HASH: return vni::TypePool<TestType>::create();
 			default: return 0;
 		}
 	}
 	
 	static void destroy(TestType* obj) {
 		if(obj) {
-			switch(obj->vni_hash) {
-				case test::TestType::HASH: vni::TypePool<TestType>::destroy(obj);
+			switch(obj->vni_hash_) {
+				case test::TestType::VNI_HASH: vni::TypePool<TestType>::destroy(obj);
 			}
 		}
 	}
@@ -65,9 +66,7 @@ public:
 		return "test.TestType";
 	}
 	
-	virtual void serialize(vnl::io::TypeOutput& out) const {
-		out.putEntry(VNL_IO_CLASS, 3);
-		out.putHash(HASH);
+	void serialize_body(vnl::io::TypeOutput& out) const {
 		out.putHash(0x4786877);
 		if(test::TestType::val) {
 			test::TestType::val->serialize(out);
@@ -80,6 +79,12 @@ public:
 		test::TestType::list.serialize(out);
 		out.putHash(0x3674474);
 		test::TestType::list2.serialize(out);
+	}
+	
+	virtual void serialize(vnl::io::TypeOutput& out) const {
+		out.putEntry(VNL_IO_CLASS, 3);
+		out.putHash(VNI_HASH);
+		serialize_body(out);
 	}
 	
 	virtual void deserialize(vnl::io::TypeInput& in, int size) {

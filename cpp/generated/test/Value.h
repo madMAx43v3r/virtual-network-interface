@@ -19,22 +19,23 @@ public:
 	int32_t y;
 	int32_t z;
 	
-	static const uint32_t HASH = 0x51212323;
+	static const uint32_t VNI_HASH = 0x51212323;
+	static const int VNI_NUM_FIELDS = 3;
 	
 	Value() {
-		vni_hash_ = HASH;
+		vni_hash_ = VNI_HASH;
 		x = 0;
 		y = 0;
 		z = 0;
 	}
 	
 	static Value* create() {
-		return create(HASH);
+		return create(VNI_HASH);
 	}
 	
 	static Value* create(uint32_t hash) {
 		switch(hash) {
-			case HASH: return vni::TypePool<Value>::create();
+			case VNI_HASH: return vni::TypePool<Value>::create();
 			default: return 0;
 		}
 	}
@@ -42,13 +43,13 @@ public:
 	static void destroy(Value* obj) {
 		if(obj) {
 			switch(obj->vni_hash) {
-				case HASH: vni::TypePool<Value>::destroy(obj);
+				case VNI_HASH: vni::TypePool<Value>::destroy(obj);
 			}
 		}
 	}
 	
 	static void read(vnl::io::TypeInput& in, Value* obj) {
-		vni::Class::read<Value>(in, obj);
+		vni::Class::read(in, obj);
 	}
 	
 	static Value* read(vnl::io::TypeInput& in) {
@@ -59,15 +60,19 @@ public:
 		return "test.Value";
 	}
 	
-	virtual void serialize(vnl::io::TypeOutput& out) const {
-		out.putEntry(VNL_IO_CLASS, 3);
-		out.putHash(HASH);
+	void serialize_body(vnl::io::TypeOutput& out) const {
 		out.putHash(0x4354534);
 		out.putInt(x);
 		out.putHash(0x4345534);
 		out.putInt(y);
 		out.putHash(0x4356544);
 		out.putInt(z);
+	}
+	
+	virtual void serialize(vnl::io::TypeOutput& out) const {
+		out.putEntry(VNL_IO_CLASS, 3);
+		out.putHash(VNI_HASH);
+		serialize_body(out);
 	}
 	
 	virtual void deserialize(vnl::io::TypeInput& in, uint32_t size) {

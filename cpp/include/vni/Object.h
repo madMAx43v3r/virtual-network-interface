@@ -31,17 +31,21 @@ protected:
 		if(pkt->pkt_id == vni::PID_SAMPLE) {
 			handle(((Sample*)pkt)->data, pkt->src_addr, pkt->dst_addr);
 		} else if(pkt->pkt_id == vni::PID_FRAME) {
-			Frame* req = (Frame*)pkt->payload;
-			Frame* ret = buffer.create<Frame>();
-			in_buf.wrap(req->data, req->size);
+			Frame* request = (Frame*)pkt->payload;
+			uint32_t& last_seq = clients[request->src_addr];
+			if(request <= last_seq) {
+				return false;
+			}
+			Frame* result = buffer.create<Frame>();
+			in_buf.wrap(request->data, request->size);
 			int size = 0;
 			int id = in.getEntry(size);
 			if(id == VNL_IO_INTERFACE) {
 				uint32_t hash = 0;
 				in.getHash(hash);
 				if(hash == vni_hash_) {
-					ret->data = vnl::Page::alloc();
-					out_buf.wrap(ret->data);
+					result->data = vnl::Page::alloc();
+					out_buf.wrap(result->data);
 					while(!in.error()) {
 						uint32_t hash = 0;
 						int size = 0;
@@ -60,11 +64,12 @@ protected:
 						}
 					}
 					out.flush();
-					ret->size = out_buf.position();
+					result->size = out_buf.position();
 				}
 			}
-			ret->seq = req->seq;
-			send_async(ret, req->src_addr);
+			result->seq = request->seq;
+			send_async(result, request->src_addr);
+			last_seq = request->seq;
 		}
 		return false;
 	}
@@ -92,6 +97,7 @@ protected:
 	vnl::Address my_address;
 	
 private:
+	vnl::Map<vnl::Address, uint32_t> clients;
 	vnl::io::ByteBuffer in_buf;
 	vnl::io::ByteBuffer out_buf;
 	vnl::io::TypeInput in;

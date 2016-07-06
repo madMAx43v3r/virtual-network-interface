@@ -8,12 +8,12 @@
 #ifndef CPP_GENERATED_TEST_VALUE_T_H_
 #define CPP_GENERATED_TEST_VALUE_T_H_
 
-#include <vni/Class.h>
+#include <vni/Value.h>
 
 
 namespace test {
 
-class value_t : public vni::Class {
+class value_t : public vni::Value {
 public:
 	float pos[3];
 	
@@ -26,46 +26,55 @@ public:
 	}
 	
 	static value_t* create() {
-		return vni::TypePool<value_t>::create();
+		return vni::GlobalPool<value_t>::create();
 	}
 	
 	static void destroy(value_t* obj) {
 		if(obj) {
-			vni::TypePool<value_t>::destroy(obj);
+			vni::GlobalPool<value_t>::destroy(obj);
 		}
-	}
-	
-	static void read(vnl::io::TypeInput& in, value_t* obj) {
-		vni::Class::read(in, obj);
-	}
-	
-	static value_t* read(vnl::io::TypeInput& in) {
-		return vni::Class::read<value_t>(in);
 	}
 	
 	virtual const char* vni_type_name() const {
 		return "test.value_t";
 	}
 	
-	void serialize_body(vnl::io::TypeOutput& out) const {
+	static void write_header(vnl::io::TypeOutput& out) {
 		out.putHash(0x8356785);
+	}
+	
+	void write_body(vnl::io::TypeOutput& out) const {
 		out.putArray(pos, 3);
 	}
 	
 	virtual void serialize(vnl::io::TypeOutput& out) const {
-		out.putEntry(VNL_IO_STRUCT, 1);
-		serialize_body(out);
+		out.putEntry(VNL_IO_STRUCT, VNI_NUM_FIELDS);
+		write_header(out);
+		write_body(out);
 	}
 	
 	virtual void deserialize(vnl::io::TypeInput& in, int size) {
-		for(int i = 0; i < size; ++i) {
-			uint32_t hash = 0;
-			in.getHash(hash);
-			switch(hash) {
+		if(!in.inc_stack()) {
+			return;
+		}
+		uint32_t hash[VNL_IO_MAX_NUM_FIELDS];
+		int num = std::min(size, VNL_IO_MAX_NUM_FIELDS);
+		for(int i = 0; i < num; ++i) {
+			in.getHash(hash[i]);
+		}
+		for(int i = num; i < size && !in.error(); ++i) {
+			uint32_t tmp; in.getHash(tmp);
+		}
+		for(int i = 0; i < num; ++i) {
+			switch(hash[i]) {
 				case 0x8356785: in.getArray(pos, 3); break;
 				default: in.skip();
 			}
 		}
+		for(int i = num; i < size && !in.error(); ++i) {
+			in.skip();
+		}
+		in.dec_stack();
 	}
 	
 };

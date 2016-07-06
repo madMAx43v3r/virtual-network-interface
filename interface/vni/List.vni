@@ -1,10 +1,5 @@
 package vni;
 
-interface List<T> {
-	
-	void push_back(T elem);
-	
-	void clear();
+interface List<class T> {
 	
 }
-

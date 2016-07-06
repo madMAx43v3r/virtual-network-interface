@@ -1,0 +1,5 @@
+package vni;
+
+class ConstCall {
+	List<Value> args;
+}

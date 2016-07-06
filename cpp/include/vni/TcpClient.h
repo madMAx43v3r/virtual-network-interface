@@ -18,12 +18,12 @@ class TcpClient : public Downlink {
 public:
 	TcpClient(const vnl::String& endpoint, int port = 8916)
 		:	Downlink(vnl::StringWriter().out << "vni/tcp/client/" << endpoint << "/" << vnl::dec(port)),
-			endpoint(endpoint), port(port)
+			endpoint(endpoint), port(port), sock(-1)
 	{
 	}
 	
 protected:
-	virtual int connect() {
+	virtual vnl::io::Socket* connect() {
 		int fd = ::socket(AF_INET, SOCK_STREAM, 0);
 		if(fd < 0) {
 			log(ERROR).out << "Failed to create client socket, error=" << vnl::dec(fd) << vnl::endl;
@@ -48,13 +48,16 @@ protected:
 				usleep(error_interval*1000);
 				continue;
 			}
-			return fd;
+			break;
 		}
+		sock = vnl::io::Socket(fd);
+		return &sock;
 	}
 	
 private:
 	vnl::String endpoint;
 	int port;
+	vnl::io::Socket sock;
 	
 };
 

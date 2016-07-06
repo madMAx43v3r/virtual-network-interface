@@ -17,25 +17,51 @@ namespace vni {
 template<typename T>
 class List : public vni::ListBase<T>, public vnl::List<T*> {
 public:
+	List() {}
 	
-	virtual void push_back(T* elem) {
-		vnl::List<T*>::push_back(elem);
+	List(const List& other) {
+		*this = other;
 	}
 	
-	virtual void clear() {
-		vnl::List<T*>::clear();
+	~List() {
+		clear();
 	}
 	
-	virtual int32_t test(int32_t val) const {
-		return val*1337;
+	List& operator=(const List& other) {
+		clear();
+		// TODO
+	}
+	
+	void clear() {
+		for(vnl::List<T*>::const_iterator iter = begin(); iter != end(); ++iter) {
+			T::destroy(*iter);
+		}
 	}
 	
 	virtual void serialize(vnl::io::TypeOutput& out) const {
 		Writer wr(out);
-		for(T* obj : list) {
-			wr.push_back(obj);
+		for(vnl::List<T*>::const_iterator iter = begin(); iter != end(); ++iter) {
+			out.putEntry(VNL_IO_CALL, 1);
+			out.putHash(push_back_);
+			iter->serialize(out);
 		}
 	}
+	
+protected:
+	virtual bool vni_call(vnl::io::TypeInput& _in, uint32_t _hash, int _num_args) {
+		switch(_hash) {
+		case push_back_:
+			T* obj = vni::read<T>(_in);
+			if(obj) {
+				push_back(obj);
+			}
+			break;
+		}
+		return false;
+	}
+	
+private:
+	static const uint32_t push_back_ = vnl::hash64("push_back");
 	
 };
 

@@ -1,0 +1,6 @@
+package vni;
+
+// Note: Value is the base class for everything.
+// Note: This file is just to show that it exists.
+
+// class Value {}

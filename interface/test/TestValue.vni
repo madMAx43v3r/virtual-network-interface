@@ -1,6 +1,6 @@
 package test;
 
-class Value {
+class TestValue {
 	int x;
 	int y;
 	int z;

@@ -1,0 +1,7 @@
+package vni.reflect;
+
+class Field {
+	Class type;
+	String name;
+	Value value;
+}

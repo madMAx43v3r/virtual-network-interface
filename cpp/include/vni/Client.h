@@ -19,16 +19,16 @@ namespace vni {
 class Client : public ClientBase, public vnl::Stream {
 public:
 	Client()
-		:	in(&buf), out(&buf)
+		:	_error(0), _in(&_buf), _out(&_buf)
 	{
-		data = vnl::Page::alloc();
+		_data = vnl::Page::alloc();
 	}
 	
 	~Client() {
 		if(is_connected) {
 			Stream::close(dst);
 		}
-		data->free_all();
+		_data->free_all();
 	}
 	
 	virtual void vni_set_address(int64_t A, int64_t B) {
@@ -48,8 +48,12 @@ public:
 		is_connected = true;
 	}
 	
-	void vni_set_timeout(int64_t millis) {
-		timeout = millis;
+	void vni_set_timeout(int64_t timeout_ms) {
+		timeout = timeout_ms;
+	}
+	
+	void vni_set_fail(bool fail_if_timeout) {
+		do_fail_if_timeout = fail_if_timeout;
 	}
 	
 	virtual void serialize(vnl::io::TypeOutput& out) const {
@@ -58,33 +62,42 @@ public:
 	}
 	
 protected:
-	vnl::Packet* call() {
-		out.flush();
+	int _error;
+	
+	vnl::Packet* _call() {
+		_out.flush();
 		next_seq++;
+		int64_t ts_begin = vnl::currentTimeMillis();
 		Frame* ret = 0;
 		while(true) {
 			Frame frame;
-			frame.data = data;
-			frame.size = buf.position();
+			frame.data = _data;
+			frame.size = _buf.position();
 			frame.seq = next_seq;
 			send(&frame, dst);
 			frame.data = 0;
 			// TODO
+			int64_t ts_now = vnl::currentTimeMillis();
+			// TODO
 		}
 		if(ret) {
-			buf.wrap(ret->data, ret->size);
+			_buf.wrap(ret->data, ret->size);
+			_error = VNI_SUCCESS;
+		} else {
+			_error = VNI_ERROR;
 		}
 		return ret;
 	}
 	
 private:
 	vnl::Address dst;
-	vnl::Page* data;
-	vnl::io::ByteBuffer buf;
-	vnl::io::TypeInput in;
-	vnl::io::TypeOutput out;
+	vnl::Page* _data;
+	vnl::io::ByteBuffer _buf;
+	vnl::io::TypeInput _in;
+	vnl::io::TypeOutput _out;
 	uint32_t next_seq = 0;
 	int64_t timeout = 1000;
+	bool do_fail_if_timeout = false;
 	bool is_connected = false;
 	
 };

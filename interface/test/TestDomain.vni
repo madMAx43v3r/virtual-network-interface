@@ -1,7 +1,0 @@
-package test;
-
-interface TestDomain extends vni.Domain {
-	
-	vni.Topic<test.TestType> test_topic;
-	
-}

@@ -13,8 +13,14 @@
 
 namespace vni {
 
-class Interface : public Type {
+class Interface : public Value {
 public:
+	template<typename T>
+	static T* create(uint32_t hash);
+	
+	template<typename T>
+	static void destroy(T* obj);
+	
 	virtual void deserialize(vnl::io::TypeInput& in, int size) {
 		int stack = 1;
 		while(!in.error()) {
@@ -45,28 +51,28 @@ public:
 		}
 	}
 	
-	static void read(vnl::io::TypeInput& in, Interface* obj) {
-		int size = 0;
-		int id = in.getEntry(size);
-		if(id == VNL_IO_INTERFACE) {
-			uint32_t hash = 0;
-			in.getHash(hash);
-			if(hash == obj->vni_hash_) {
-				obj->deserialize(in, size);
-			} else {
-				in.skip(id, size);
-			}
-		} else {
-			in.skip(id, size);
-		}
-	}
-	
 protected:
 	virtual bool vni_call(vnl::io::TypeInput& in, uint32_t hash, int num_args) = 0;
 	virtual bool vni_const_call(vnl::io::TypeInput& in, uint32_t hash, int num_args, vnl::io::TypeOutput& out) = 0;
 	
 };
 
+
+inline void read(vnl::io::TypeInput& in, Interface* obj) {
+	int size = 0;
+	int id = in.getEntry(size);
+	if(id == VNL_IO_INTERFACE) {
+		uint32_t hash = 0;
+		in.getHash(hash);
+		if(hash == obj->vni_hash_) {
+			obj->deserialize(in, size);
+		} else {
+			in.skip(id, size);
+		}
+	} else {
+		in.skip(id, size);
+	}
+}
 
 
 

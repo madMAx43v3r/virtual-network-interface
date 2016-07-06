@@ -15,6 +15,10 @@
 
 namespace vni {
 
+enum {
+	VNI_SUCCESS = 0, VNI_ERROR = -1
+};
+
 class Object : public ObjectBase, public vnl::Module {
 public:
 	Object(const vnl::String& domain, const vnl::String& name)
@@ -25,7 +29,7 @@ public:
 	}
 	
 protected:
-	virtual bool handle(vni::Class* sample, vnl::Address src_addr, vnl::Address dst_addr) = 0;
+	virtual bool handle(vni::Value* sample, vnl::Address src_addr, vnl::Address dst_addr) = 0;
 	
 	virtual bool handle(vnl::Packet* pkt) {
 		if(pkt->pkt_id == vni::PID_SAMPLE) {
@@ -55,14 +59,20 @@ protected:
 						if(id == VNL_IO_CALL) {
 							in.getHash(hash);
 							bool res = vni_call(in, hash, size);
+							if(!res) {
+								in.skip(VNL_IO_CALL, size);
+							}
 							out.putBool(res);
 						} else if(id == VNL_IO_CONST_CALL) {
 							in.getHash(hash);
 							if(!vni_const_call(in, hash, size, out)) {
+								in.skip(VNL_IO_CONST_CALL, size);
 								out.putNull();
 							}
 						} else if(id == VNL_IO_INTERFACE && size == VNL_IO_END) {
 							break;
+						} else {
+							in.skip(id, size);
 						}
 					}
 					out.flush();

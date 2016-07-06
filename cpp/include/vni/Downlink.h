@@ -25,7 +25,7 @@ class Downlink : public vnl::Module {
 public:
 	Downlink(const vnl::String& port)
 		:	Module(vnl::String(port) << "/downlink"),
-			port(port)
+			port(port), sock(0)
 	{
 	}
 	
@@ -36,7 +36,9 @@ public:
 	virtual void receive(vnl::Message* msg) {
 		if(msg->msg_id == vnl::Registry::exit_t::MID) {
 			run = false;
-			::close(fd);
+			if(sock) {
+				sock->close();
+			}
 		}
 		msg->ack();
 	}
@@ -46,14 +48,13 @@ protected:
 		vnl::Reference<Uplink> uplink(engine, fork(new Uplink(vnl::String(port) << "/uplink")));
 		int64_t last_maintain = vnl::currentTime();
 		while(dorun) {
-			fd = connect();
-			if(fd < 0) {
+			sock = connect();
+			if(!sock) {
 				break;
 			}
-			Uplink::enable_t* enable = buffer.create<Uplink::enable_t>(fd);
+			Uplink::enable_t* enable = buffer.create<Uplink::enable_t>(sock);
 			send_async(enable, uplink);
-			vnl::io::Socket socket(fd);
-			vnl::io::TypeInput in(&socket);
+			vnl::io::TypeInput in(sock);
 			while(dorun) {
 				int size = 0;
 				int id = in.getEntry(size);
@@ -137,15 +138,14 @@ protected:
 		// TODO
 	}
 	
-	virtual int connect() = 0;
+	virtual vnl::io::Socket* connect() = 0;
 	
 protected:
 	volatile bool dorun = true;
 	vnl::String port;
 	
 private:
-	int fd = -1;
-	vnl::io::Socket socket;
+	vnl::io::Socket* sock;
 	vnl::Map<vnl::Address, int> table;
 	vnl::Map<vnl::Address, int64_t> fwd_table;
 	

@@ -36,7 +36,7 @@ protected:
 
 
 template<typename T>
-class TypePool {
+class GlobalPool {
 public:
 	static T* create() {
 		sync.lock();
@@ -57,8 +57,8 @@ private:
 	static vnl::Pool<T> pool;
 };
 
-template<typename T> vnl::util::spinlock TypePool<T>::sync;
-template<typename T> vnl::Pool<T> TypePool<T>::pool;
+template<typename T> vnl::util::spinlock GlobalPool<T>::sync;
+template<typename T> vnl::Pool<T> GlobalPool<T>::pool;
 
 
 }

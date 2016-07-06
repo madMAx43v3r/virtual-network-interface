@@ -1,12 +1,15 @@
 package test;
 
-import test.TestType;
+import vni.String;
 
 object TestNode {
 	
 	int level = -1;
-	vni.String instance = "blubb";
+	String instance = "blubb";
 	
 	void handle(TestType ev);
+	
+	Value test_func(Value val) const;
+	value_t test_func2(value_t val) const;
 	
 }

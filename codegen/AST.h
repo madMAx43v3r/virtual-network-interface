@@ -193,7 +193,6 @@ class Type;
 
 class Field : public Base {
 public:
-	Type* scope = 0;
 	Base* type = 0;
 	string name;
 	
@@ -201,13 +200,7 @@ public:
 	
 	virtual string get_name() { return name; }
 	virtual string get_full_name() { return type->get_full_name() + " " + name; }
-	virtual uint64_t get_hash() {
-		CRC64 hash;
-		hash.update(scope->get_hash());
-		hash.update(type->get_hash());
-		hash.update(name);
-		return hash.getValue();
-	}
+	virtual uint64_t get_hash() { return hash64(name); }
 };
 
 
@@ -218,13 +211,12 @@ public:
 	
 	virtual string get_name() { return name; }
 	virtual string get_full_name() { return type->get_full_name() + " " + name; }
-	virtual uint64_t get_hash() { return type->get_hash(); }
+	virtual uint64_t get_hash() { return hash64(name); }
 };
 
 
 class Method : public Base {
 public:
-	Type* scope = 0;
 	Base* type = 0;
 	string name;
 	vector<Param*> params;
@@ -243,18 +235,16 @@ public:
 		return str + ")";
 	}
 	virtual uint64_t get_hash() {
-		CRC64 hash;
-		hash.update(scope->get_hash());
-		hash.update(name);
-		return hash.getValue();
+		return hash64(name);
 	}
 };
 
 
 class Type : public Base {
 public:
-	Package* package = 0;
+	Package* package;
 	string name;
+	Type* super = 0;
 	
 	map<string, Base*> index;
 	vector<Field*> constants;
@@ -275,11 +265,12 @@ public:
 
 class Enum : public Base {
 public:
-	Type* type = 0;
+	Type* scope;
+	string name;
 	vector<string> values;
 	
 	Enum() {
-		type = TYPE;
+		scope = TYPE;
 	}
 };
 
@@ -293,16 +284,13 @@ public:
 
 class Class : public Struct {
 public:
-	Base* super = 0;
 	
 };
 
 
-class TmplType;
-
 class Interface : public Type {
 public:
-	vector<TmplType*> params;
+	vector<string> params;
 	vector<Method*> methods;
 	
 	Interface() {
@@ -311,26 +299,10 @@ public:
 };
 
 
-class Instance : public Base {
+class Object : public Interface {
 public:
-	Interface* type = 0;
-	vector<Type*> params;
 	
-};
-
-
-class TmplType : public Base {
-public:
-	Interface* type = 0;
-	string name;
 	
-	TmplType(Interface* type, string name) : type(type), name(name) {
-		type->params.push_back(this);
-		type->index[name] = this;
-	}
-	
-	virtual string get_name() { return name; }
-	virtual string get_full_name() { return type->get_full_name() + "::" + name; }
 };
 
 
@@ -350,10 +322,12 @@ static Base* resolve(const string& ident) {
 	}
 	if(!res) {
 		int pos = ident.find_last_of('.');
-		if(pos != std::string::npos) {
+		if(pos != string::npos) {
 			string package = ident.substr(0, pos);
 			string name = ident.substr(pos+1);
-			res = new Import(package, name);
+			res = new Import(Package::get(package), name);
+		} else {
+			res = new Import(PACKAGE, ident);
 		}
 	}
 	if(!res) {

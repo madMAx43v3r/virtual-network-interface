@@ -17,22 +17,22 @@ class TcpProxy : public Downlink {
 public:
 	TcpProxy(int fd)
 		:	Downlink(vnl::StringWriter().out << "vni/tcp/proxy/" << vnl::dec(fd)),
-			fd(fd)
+			sock(fd)
 	{
 	}
 	
 protected:
-	virtual int connect() {
+	virtual vnl::io::Socket* connect() {
 		if(dorun) {
 			dorun = false;
-			return fd;
+			return &sock;
 		} else {
-			return -1;
+			return 0;
 		}
 	}
 	
 private:
-	int fd;
+	vnl::io::Socket sock;
 	bool dorun = true;
 	
 };

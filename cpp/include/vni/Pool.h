@@ -15,7 +15,7 @@
 namespace vni {
 
 template<typename T>
-class GlobalPool {
+class Pool {
 public:
 	static T* create() {
 		sync.lock();
@@ -38,8 +38,21 @@ private:
 	static vnl::Pool<T> pool;
 };
 
-template<typename T> vnl::util::spinlock GlobalPool<T>::sync;
-template<typename T> vnl::Pool<T> GlobalPool<T>::pool;
+template<typename T> vnl::util::spinlock Pool<T>::sync;
+template<typename T> vnl::Pool<T> Pool<T>::pool;
+
+
+template<typename T>
+T* vni::create() {
+	return vni::Pool<T>::create();
+}
+
+template<typename T>
+void vni::destroy(T* obj) {
+	if(obj) {
+		obj->destroy();
+	}
+}
 
 
 }

@@ -1,8 +1,6 @@
 package vni.info;
 
-class Object {
-	
-	long hash;
+class Parameter {
+	Class type;
 	String name;
-	
 }

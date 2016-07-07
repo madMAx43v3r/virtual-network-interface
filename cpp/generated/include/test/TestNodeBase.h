@@ -53,7 +53,7 @@ public:
 			_wr.test_func2(val);
 			vnl::Packet* _pkt = _call();
 			if(_pkt) {
-				_result = vni::read(_in);
+				vni::read(_in, _result);
 				_pkt->ack();
 			}
 			return _error;
@@ -64,10 +64,10 @@ public:
 		Writer _wr(_out);
 		_out.putEntry(VNL_IO_CALL, 1);
 		_out.putHash(0x8356785);
-		_out.put(level);
+		vni::write(_out, level);
 		_out.putEntry(VNL_IO_CALL, 1);
 		_out.putHash(0x8357475);
-		instance.serialize(_out);
+		vni::write(_out, instance);
 	}
 	
 protected:
@@ -103,7 +103,7 @@ protected:
 	virtual bool vni_call(vnl::io::TypeInput& in, uint32_t hash, int num_args) {
 		switch(hash) {
 		case 0x8356785: if(num_args == 1) { in.getValue(level); } break;
-		case 0x8357475: if(num_args == 1) { vni::read(in, &instance); } break;
+		case 0x8357475: if(num_args == 1) { vni::read(in, instance); } break;
 		}
 		return false;
 	}

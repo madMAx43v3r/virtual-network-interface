@@ -1,0 +1,6 @@
+package vni.info;
+
+class Field {
+	String type;
+	String name;
+}

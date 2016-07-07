@@ -9,7 +9,7 @@
 #define INCLUDE_VNI_OBJECT_H_
 
 #include <vni/ObjectBase.h>
-#include <vni/Binary.h>
+#include <vni/Announce.h>
 #include <vnl/Module.h>
 
 
@@ -21,9 +21,10 @@ enum {
 
 class Object : public ObjectBase, public vnl::Module {
 public:
-	Object(const vnl::String& domain, const vnl::String& name)
-		:	Module(vnl::String(domain) << "/" << name),
-			my_address(domain, name),
+	Object(const vnl::String& domain, const vnl::String& topic)
+		:	Module(vnl::String(domain) << "/" << topic),
+			my_domain(domain), my_topic(topic),
+			my_address(domain, topic),
 			in(&in_buf), out(&out_buf)
 	{
 	}
@@ -31,6 +32,11 @@ public:
 protected:
 	virtual void run() {
 		Module::open(my_address);
+		// TODO: send announce
+		vni::Sample* pkt = buffer.create<vni::Sample>();
+		pkt->src_addr = my_address;
+		pkt->data = vni::Announce::create();
+		send_async(pkt, vnl::Address(my_address.A, "vni/Announce"));
 		Module::run();
 		Module::close(my_address);
 	}
@@ -62,13 +68,13 @@ protected:
 							in.getHash(hash);
 							bool res = vni_call(in, hash, size);
 							if(!res) {
-								in.skip(VNL_IO_CALL, size);
+								in.skip(id, size, hash);
 							}
 							out.putBool(res);
 						} else if(id == VNL_IO_CONST_CALL) {
 							in.getHash(hash);
 							if(!vni_const_call(in, hash, size, out)) {
-								in.skip(VNL_IO_CONST_CALL, size);
+								in.skip(id, size, hash);
 								out.putNull();
 							}
 						} else if(id == VNL_IO_INTERFACE && size == VNL_IO_END) {
@@ -108,6 +114,8 @@ protected:
 	
 protected:
 	vnl::Address my_address;
+	vnl::String my_domain;
+	vnl::String my_topic;
 	
 private:
 	vnl::Map<vnl::Address, uint32_t> clients;

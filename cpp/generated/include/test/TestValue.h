@@ -34,7 +34,7 @@ public:
 	
 	static TestValue* create(vnl::Hash32 hash) {
 		switch(hash) {
-			case VNI_HASH: return vni::GlobalPool<TestValue>::create();
+			case VNI_HASH: return vni::Pool<TestValue>::create();
 			default: return 0;
 		}
 	}
@@ -42,7 +42,7 @@ public:
 	static void destroy(TestValue* obj) {
 		if(obj) {
 			switch(obj->vni_hash_) {
-				case VNI_HASH: vni::GlobalPool<TestValue>::destroy(obj);
+				case VNI_HASH: vni::Pool<TestValue>::destroy(obj);
 			}
 		}
 	}
@@ -55,11 +55,11 @@ public:
 		out.putEntry(VNL_IO_CLASS, 3);
 		out.putHash(VNI_HASH);
 		out.putHash(0x4354534);
-		out.putValue(x);
+		vni::write(out, x);
 		out.putHash(0x4345534);
-		out.putValue(y);
+		vni::write(out, y);
 		out.putHash(0x4356544);
-		out.putValue(z);
+		vni::write(out, z);
 	}
 	
 	virtual void deserialize(vnl::io::TypeInput& in, int size) {

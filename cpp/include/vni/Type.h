@@ -10,7 +10,8 @@
 
 #include <vnl/io.h>
 #include <vnl/Vector.h>
-#include <vni/GlobalPool.h>
+
+#include "Pool.h"
 
 
 namespace vni {
@@ -19,33 +20,19 @@ class Type : public vnl::io::Serializable {
 public:
 	virtual ~Type() {}
 	
+	virtual uint32_t vni_hash() const = 0;
 	virtual const char* type_name() const = 0;
-	
+	virtual void to_string(vnl::String& str) const = 0;
 	virtual bool is_base(vnl::Hash32 hash) const = 0;
-	
 	virtual bool is_instance(vnl::Hash32 hash) const = 0;
 	
-	uint32_t vni_hash() const {
-		return vni_hash_;
+	vnl::String to_string() const {
+		vnl::String str;
+		to_string(str);
+		return str;
 	}
-	
-protected:
-	uint32_t vni_hash_;
 	
 };
-
-
-template<typename T>
-T* vni::create() {
-	return vni::GlobalPool<T>::create();
-}
-
-template<typename T>
-void vni::destroy(T* obj) {
-	if(obj) {
-		obj->destroy();
-	}
-}
 
 
 template<typename T>
@@ -58,7 +45,8 @@ inline T* read(vnl::io::TypeInput& in) {
 			obj = T::create();
 			obj->deserialize(in, size);
 			break;
-		case VNL_IO_CLASS: {
+		case VNL_IO_CLASS:
+		case VNL_IO_INTERFACE: {
 			uint32_t hash = 0;
 			in.getHash(hash);
 			obj = T::create(hash);
@@ -128,6 +116,17 @@ template<typename T, int N>
 void write(vnl::io::TypeOutput& out, const vnl::Vector<T, N>& vec) { out.putArray(vec); }
 
 
+inline vnl::String to_string(const Value* obj) {
+	if(obj) {
+		return obj->to_string();
+	} else {
+		return "null";
+	}
+}
+
+inline vnl::String to_string(const Value& obj) {
+	return obj.to_string();
+}
 
 
 

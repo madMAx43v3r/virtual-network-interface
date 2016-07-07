@@ -31,7 +31,7 @@ public:
 	
 	static Integer* create(uint32_t hash) {
 		switch(hash) {
-			case VNI_HASH: return vni::GlobalPool<Integer>::create();
+			case VNI_HASH: return vni::Pool<Integer>::create();
 			default: return 0;
 		}
 	}
@@ -39,7 +39,7 @@ public:
 	static void destroy(Integer* obj) {
 		if(obj) {
 			switch(obj->vni_hash_) {
-				case VNI_HASH: vni::GlobalPool<Integer>::destroy(obj);
+				case VNI_HASH: vni::Pool<Integer>::destroy(obj);
 			}
 		}
 	}

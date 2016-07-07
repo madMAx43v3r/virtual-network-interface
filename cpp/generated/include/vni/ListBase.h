@@ -28,41 +28,10 @@ public:
 	~ListBase() {
 	}
 	
-	static List<T>* create() {
-		return vni::GlobalPool<vni::List<T> >::create();
-	}
+	static List<T>* create(vnl::Hash32 hash);
+	static List<T>* create() { return vni::create<vni::List<T> >(); }
 	
-	static List<T>* create(vnl::Hash32 hash) {
-		switch(hash) {
-			case vni::Value::VNI_HASH: return vni::GlobalPool<vni::List<T> >::create();
-		}
-		return 0;
-	}
-	
-	virtual void destroy() {
-		vni::GlobalPool<vni::Value>::destroy(this);
-	}
-	
-	static bool is_base(vnl::Hash32 hash) {
-		switch(hash) {
-		}
-		return false;
-	}
-	
-	static bool is_instance(vnl::Hash32 hash) {
-		switch(hash) {
-			case test::TestType::VNI_HASH: return true;
-		}
-		return false;
-	}
-	
-	virtual bool vni_is_base(vnl::Hash32 hash) {
-		return is_base(hash);
-	}
-	
-	virtual bool vni_is_instance(vnl::Hash32 hash) {
-		return is_instance(hash);
-	}
+	virtual void destroy() { vni::destroy<vni::Value>(this); }
 	
 	virtual const char* vni_type_name() const {
 		return "vni.List";

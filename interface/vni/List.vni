@@ -1,5 +1,5 @@
 package vni;
 
-interface List<class T> {
+interface List<T> {
 	
 }

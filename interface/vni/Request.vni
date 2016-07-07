@@ -3,7 +3,7 @@ package vni.info;
 class Request {
 	
 	enum type_t {
-		GET_PROCESS
+		GET_PROCESS, GET_CLASS, GET_DEFAULT
 	}
 	
 	type_t type;

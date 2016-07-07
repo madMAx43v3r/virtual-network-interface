@@ -33,9 +33,9 @@ public:
 		memset(pos, 0, sizeof(pos));
 	}
 	
-	static value_t* create() { return vni::GlobalPool<value_t>::create(); }
+	static value_t* create() { return vni::Pool<value_t>::create(); }
 	
-	virtual void destroy() { vni::GlobalPool<value_t>::destroy(this); }
+	virtual void destroy() { vni::Pool<value_t>::destroy(this); }
 	
 	virtual const char* type_name() const { return reflect::value_t::type_name(); }
 	

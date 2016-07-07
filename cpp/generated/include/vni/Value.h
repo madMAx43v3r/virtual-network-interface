@@ -13,38 +13,31 @@
 
 namespace vni {
 
-namespace reflect {
-
-class Value {
-public:
-	static const char* type_name() { return "vni.Value"; }
-	static bool is_base(vnl::Hash32 hash);
-	static bool is_instance(vnl::Hash32 hash);
-};
-
-}
-
-
 class Value : public vni::Type {
 public:
 	static const uint32_t VNI_HASH = 0xb43cb5b8;
+	static const uint32_t NUM_FIELDS = 0;
 	
 	Value() {
-		vni_hash_ = VNI_HASH;
 	}
 	
 	~Value() {
 	}
 	
 	static Value* create(vnl::Hash32 hash);
-	static Value* create() { return vni::GlobalPool<vni::Value>::create(); }
+	static Value* create() { return vni::create<vni::Value>(); }
 	
-	virtual void destroy() { vni::GlobalPool<vni::Value>::destroy(this); }
+	virtual void destroy() { vni::destroy<vni::Value>(this); }
 	
-	virtual bool is_base(vnl::Hash32 hash) const { return reflect::Value::is_base(hash); }
-	virtual bool is_instance(vnl::Hash32 hash) const { return reflect::Value::is_instance(hash); }
+	virtual uint32_t vni_hash() const { return VNI_HASH; }
+	virtual const char* type_name() const { return "vni.Value"; }
+	virtual bool is_base(vnl::Hash32 hash) const;
+	virtual bool is_instance(vnl::Hash32 hash) const;
 	
-	virtual const char* type_name() const { return reflect::Value::type_name(); }
+	virtual int num_fields() const { return NUM_FIELDS; }
+	virtual int field_index(vnl::Hash32 hash) const;
+	virtual const char* field_name(int index) const;
+	virtual vni::Value* field_type(int index) const;
 	
 	virtual void serialize(vnl::io::TypeOutput& out) const {
 		out.putEntry(VNL_IO_CLASS, 0);
@@ -60,7 +53,6 @@ public:
 			}
 		}
 	}
-	
 	
 };
 

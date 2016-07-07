@@ -8,7 +8,7 @@
 #ifndef INCLUDE_VNI_SAMPLE_H_
 #define INCLUDE_VNI_SAMPLE_H_
 
-#include <vni/Class.h>
+#include <vni/Value.h>
 #include <vnl/Packet.h>
 
 
@@ -23,22 +23,18 @@ public:
 	}
 	
 	~Sample() {
-		Value::destroy(data);
+		vni::destroy(data);
 	}
 	
 	Value* data = 0;
 	
 protected:
 	virtual void write(vnl::io::TypeOutput& out) const {
-		if(data) {
-			data->serialize(out);
-		} else {
-			out.putNull();
-		}
+		vni::write(out, data);
 	}
 	
 	virtual void read(vnl::io::TypeInput& in) {
-		data = vni::Class::read<vni::Class>(in);
+		data = vni::read<vni::Value>(in);
 	}
 	
 	

@@ -40,7 +40,7 @@ public:
 	
 	static TestType* create(vnl::Hash32 hash) {
 		switch(hash) {
-			case test::TestType::VNI_HASH: return vni::GlobalPool<TestType>::create();
+			case test::TestType::VNI_HASH: return vni::Pool<TestType>::create();
 		}
 		return 0;
 	}
@@ -48,7 +48,7 @@ public:
 	static void destroy(TestType* obj) {
 		if(obj) {
 			switch(obj->vni_hash_) {
-				case test::TestType::VNI_HASH: vni::GlobalPool<TestType>::destroy(obj);
+				case test::TestType::VNI_HASH: vni::Pool<TestType>::destroy(obj);
 			}
 		}
 	}
@@ -77,6 +77,13 @@ public:
 	
 	virtual const char* vni_type_name() const {
 		return "test.TestType";
+	}
+	
+	virtual void to_string(vnl::String& str) const {
+		str << "{";
+		str << "val:" << vni::to_string(val) << ",";
+		
+		str << "}";
 	}
 	
 	virtual void serialize(vnl::io::TypeOutput& out) const {

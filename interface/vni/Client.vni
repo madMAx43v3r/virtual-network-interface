@@ -2,6 +2,6 @@ package vni;
 
 interface Client {
 	
-	void vni_set_address(long A, long B);
+	void client_set_dst_addr(long A, long B);
 	
 }

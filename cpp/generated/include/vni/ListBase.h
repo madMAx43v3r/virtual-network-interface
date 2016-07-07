@@ -13,16 +13,15 @@
 
 namespace vni {
 
-template<typename T>
+template<class T>
 class List;
 
-template<typename T>
+template<class T>
 class ListBase : public vni::Interface {
 public:
 	static const uint32_t VNI_HASH = 0x16233789;
 	
 	ListBase() {
-		vni_hash_ = VNI_HASH;
 	}
 	
 	~ListBase() {
@@ -31,7 +30,7 @@ public:
 	static List<T>* create(vnl::Hash32 hash);
 	static List<T>* create() { return vni::create<vni::List<T> >(); }
 	
-	virtual void destroy() { vni::destroy<vni::Value>(this); }
+	virtual void destroy() { vni::destroy<vni::List<T> >(this); }
 	
 	virtual const char* vni_type_name() const {
 		return "vni.List";

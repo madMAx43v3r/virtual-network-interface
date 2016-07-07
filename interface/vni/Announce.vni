@@ -1,0 +1,8 @@
+package vni;
+
+class Announce {
+	
+	String domain;
+	String name;
+	
+}

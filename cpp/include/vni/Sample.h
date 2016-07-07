@@ -23,10 +23,10 @@ public:
 	}
 	
 	~Sample() {
-		vni::Class::destroy(data);
+		Value::destroy(data);
 	}
 	
-	Class* data = 0;
+	Value* data = 0;
 	
 protected:
 	virtual void write(vnl::io::TypeOutput& out) const {

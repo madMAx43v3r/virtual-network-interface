@@ -20,50 +20,38 @@ public:
 	virtual void serialize(vnl::io::TypeOutput& out) const {
 		Writer wr(out);
 		out.putEntry(VNL_IO_ARRAY, size());
-		out.putEntry(VNL_IO_CLASS, T::VNI_NUM_FIELDS);
-		out.putHash(T::VNI_HASH);
-		T::write_header(out);
+		out.putEntry(VNL_IO_CLASS, 0);
 		for(vnl::Array<T>::const_iterator iter = begin(); iter != end(); ++iter) {
-			iter->write_body(out);
+			iter->serialize(out);
 		}
 	}
 	
 	virtual void deserialize(vnl::io::TypeInput& in, int size) {
 		int id = in.getEntry(size);
 		if(id == VNL_IO_ARRAY) {
-			int num = size;
+			int dim = size;
 			id = in.getEntry(size);
 			if(id == VNL_IO_CLASS) {
-				uint32_t hash = 0;
-				in.getHash(hash);
-				T* obj = T::create(hash);
-				if(obj) {
-					for(int i = 0; i < num && !in.error(); ++i) {
-						obj->deserialize(in, size);
-						push_back(*obj);
+				for(int i = 0; i < dim && !in.error(); ++i) {
+					id = in.getEntry(size);
+					uint32_t hash = 0;
+					switch(id) {
+						case VNL_IO_STRUCT:
+							push_back(T()).deserialize(in, size);
+							break;
+						case VNL_IO_CLASS:
+						case VNL_IO_INTERFACE:
+							in.getHash(hash);
+							push_back(T()).deserialize(in, size);
+							break;
+						default: in.set_error(VNL_IO_INVALID_ID);
 					}
-				} else {
-					for(int i = 0; i < num && !in.error(); ++i) {
-						in.skip(id, size, hash);
-					}
-				}
-			} else if(id == VNL_IO_BINARY) {
-				// TODO
-			} else if(id == VNL_IO_STRING) {
-				// TODO
-			} else if(id == VNL_IO_INTERFACE || id == VNL_IO_CALL || id == VNL_IO_CONST_CALL) {
-				uint32_t hash = 0;
-				in.getHash(hash);
-				for(int i = 0; i < num && !in.error(); ++i) {
-					in.skip(id, size, hash);
 				}
 			} else {
-				for(int i = 0; i < num && !in.error(); ++i) {
-					in.skip(id, size);
-				}
+				in.set_error(VNL_IO_INVALID_ID);
 			}
 		} else {
-			in.skip(id, size);
+			in.set_error(VNL_IO_INVALID_ID);
 		}
 		in.skip(VNL_IO_INTERFACE, 0);
 	}
@@ -157,7 +145,7 @@ void _vni_deserialize_array_special(vnl::io::TypeInput& in, int size, vnl::Array
 }
 
 
-#define _VNI_ARRAY_SPECIAL(T, io_id, io_size, write_func) \
+#define _VNI_ARRAY_SPECIAL(T, io_id, io_size, io_write_func) \
 	template<> \
 	class Array<T> : public vni::ArrayBase<T>, public vnl::Array<T> { \
 	public: \
@@ -166,7 +154,7 @@ void _vni_deserialize_array_special(vnl::io::TypeInput& in, int size, vnl::Array
 			out.putEntry(VNL_IO_ARRAY, size()); \
 			out.putEntry(io_id, io_size); \
 			for(vnl::Array<T>::const_iterator iter = begin(); iter != end(); ++iter) { \
-				out.write_func(*iter); \
+				out.io_write_func(*iter); \
 			} \
 		} \
 		virtual void deserialize(vnl::io::TypeInput& in, int size) { \

@@ -29,12 +29,14 @@ public:
 	}
 	
 protected:
-	virtual bool handle(vni::Value* sample, vnl::Address src_addr, vnl::Address dst_addr) = 0;
+	virtual void run() {
+		Module::open(my_address);
+		Module::run();
+		Module::close(my_address);
+	}
 	
 	virtual bool handle(vnl::Packet* pkt) {
-		if(pkt->pkt_id == vni::PID_SAMPLE) {
-			handle(((Sample*)pkt)->data, pkt->src_addr, pkt->dst_addr);
-		} else if(pkt->pkt_id == vni::PID_FRAME) {
+		if(pkt->pkt_id == vni::PID_FRAME) {
 			Frame* request = (Frame*)pkt->payload;
 			Frame* result = buffer.create<Frame>();
 			result->seq = request->seq;
@@ -101,7 +103,7 @@ protected:
 		vnl::io::ByteBuffer buf;
 		vnl::io::TypeInput in(&buf);
 		buf.wrap(blob.data, blob.size);
-		read(in, this);
+		vni::read(in, *this);
 	}
 	
 protected:

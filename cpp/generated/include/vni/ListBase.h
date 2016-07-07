@@ -14,12 +14,54 @@
 namespace vni {
 
 template<typename T>
+class List;
+
+template<typename T>
 class ListBase : public vni::Interface {
 public:
 	static const uint32_t VNI_HASH = 0x16233789;
 	
 	ListBase() {
 		vni_hash_ = VNI_HASH;
+	}
+	
+	~ListBase() {
+	}
+	
+	static List<T>* create() {
+		return vni::GlobalPool<vni::List<T> >::create();
+	}
+	
+	static List<T>* create(vnl::Hash32 hash) {
+		switch(hash) {
+			case vni::Value::VNI_HASH: return vni::GlobalPool<vni::List<T> >::create();
+		}
+		return 0;
+	}
+	
+	virtual void destroy() {
+		vni::GlobalPool<vni::Value>::destroy(this);
+	}
+	
+	static bool is_base(vnl::Hash32 hash) {
+		switch(hash) {
+		}
+		return false;
+	}
+	
+	static bool is_instance(vnl::Hash32 hash) {
+		switch(hash) {
+			case test::TestType::VNI_HASH: return true;
+		}
+		return false;
+	}
+	
+	virtual bool vni_is_base(vnl::Hash32 hash) {
+		return is_base(hash);
+	}
+	
+	virtual bool vni_is_instance(vnl::Hash32 hash) {
+		return is_instance(hash);
 	}
 	
 	virtual const char* vni_type_name() const {

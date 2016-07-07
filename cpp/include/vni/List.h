@@ -42,7 +42,7 @@ public:
 		Writer wr(out);
 		for(vnl::List<T*>::const_iterator iter = begin(); iter != end(); ++iter) {
 			out.putEntry(VNL_IO_CALL, 1);
-			out.putHash(push_back_);
+			out.putHash(call_push_back);
 			iter->serialize(out);
 		}
 	}
@@ -50,7 +50,7 @@ public:
 protected:
 	virtual bool vni_call(vnl::io::TypeInput& _in, uint32_t _hash, int _num_args) {
 		switch(_hash) {
-		case push_back_:
+		case call_push_back:
 			T* obj = vni::read<T>(_in);
 			if(obj) {
 				push_back(obj);
@@ -61,7 +61,7 @@ protected:
 	}
 	
 private:
-	static const uint32_t push_back_ = vnl::hash64("push_back");
+	static const uint32_t call_push_back = 0xbfe7101c;
 	
 };
 

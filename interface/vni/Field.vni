@@ -1,9 +1,0 @@
-package vni;
-
-import vni.reflect.Class;
-
-class Field {
-	Class type;
-	String name;
-	Value value;
-}

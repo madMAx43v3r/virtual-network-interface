@@ -21,7 +21,7 @@ public:
 	int size = 0;
 	uint32_t seq = 0;
 	
-	Frame() : Packet(PID_FRAME), out(&buf) {
+	Frame() : Packet(PID_FRAME) {
 		payload = this;
 	}
 	
@@ -31,29 +31,23 @@ public:
 		}
 	}
 	
-	virtual void deserialize(vnl::io::TypeInput& in, int size) {
-		if(!data) {
-			data = vnl::Page::alloc();
-		}
-		buf.wrap(data);
-		Packet::deserialize(in, size);
-		out.flush();
-	}
-	
 protected:
 	virtual void write(vnl::io::TypeOutput& out) const {
 		if(data) {
-			out.writeBinary(data, size);
+			out.putBinary(data, size);
+		} else {
+			out.putNull();
 		}
 	}
 	
 	virtual void read(vnl::io::TypeInput& in, int id, int size) {
-		in.copy(id, size, &out);
+		if(!data) {
+			data = vnl::Page::alloc();
+			in.getBinary(data, size);
+		} else {
+			in.skip(id, size);
+		}
 	}
-	
-private:
-	vnl::io::ByteBuffer buf;
-	vnl::io::TypeOutput out;
 	
 };
 

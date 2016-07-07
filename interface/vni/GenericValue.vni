@@ -1,8 +1,0 @@
-package vni;
-
-import vni.reflect.Class;
-
-class GenericValue {
-	Class type;
-	List<Field> fields;
-}

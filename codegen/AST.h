@@ -29,7 +29,6 @@ static string FILE = "<unknown>";
 static string LINE = -1;
 
 static Package* PACKAGE = 0;
-static Package* VNI_PACKAGE = 0;
 static Type* TYPE = 0;
 
 
@@ -102,32 +101,13 @@ public:
 };
 
 
-class Import : public Base {
-public:
-	Package* package = 0;
-	string name;
-	
-	Import(string package_, string name_) {
-		package = Package::get(package_);
-		name = name_;
-	}
-	
-	string get_name() {	return name; }
-	string get_full_name() { return package->name + "." + name; }
-	
-	virtual Base* get() {
-		Base* res = package->index[name];
-		if(!res) {
-			std::cout << "Unable to import: " << name << " from " << package->name << std::endl;
-			die(file, line);
-		}
-		return res;
-	}
-};
-
-
 enum {
 	BYTE = 1, WORD = 2, DWORD = 4, QWORD = 8
+};
+
+class Void : public Base {
+	virtual string get_name() { return "void"; }
+	virtual string get_full_name() { return "void"; }
 };
 
 class Primitive : public Base {
@@ -189,13 +169,10 @@ public:
 };
 
 
-class Type;
-
 class Field : public Base {
 public:
 	Base* type = 0;
 	string name;
-	
 	string value;
 	
 	virtual string get_name() { return name; }
@@ -220,7 +197,6 @@ public:
 	Base* type = 0;
 	string name;
 	vector<Param*> params;
-	
 	bool is_const = false;
 	
 	virtual string get_name() { return name; }
@@ -244,18 +220,10 @@ class Type : public Base {
 public:
 	Package* package;
 	string name;
-	Type* super = 0;
-	
-	map<string, Base*> index;
-	vector<Field*> constants;
 	
 	Type(string name) : name(name) {
 		package = PACKAGE;
 		package->index[name] = this;
-	}
-	
-	void add(Base* type) {
-		index[type->get_name()] = type;
 	}
 	
 	virtual string get_name() { return name; }
@@ -263,32 +231,30 @@ public:
 };
 
 
-class Enum : public Base {
+class Enum : public Type {
 public:
-	Type* scope;
 	string name;
 	vector<string> values;
 	
-	Enum() {
-		scope = TYPE;
-	}
 };
 
 
 class Struct : public Type {
 public:
 	vector<Field*> fields;
+	vector<Field*> constants;
 	
 };
 
 
 class Class : public Struct {
 public:
+	Type* super = 0;
 	
 };
 
 
-class Interface : public Type {
+class Interface : public Class {
 public:
 	vector<string> params;
 	vector<Method*> methods;
@@ -306,29 +272,19 @@ public:
 };
 
 
+class Node : public Object {
+public:
+	
+	
+};
+
 
 
 
 static Base* resolve(const string& ident) {
 	Base* res = INDEX[hash64(ident)];
-	if(!res && TYPE) {
-		res = TYPE->index[ident];
-	}
-	if(!res && VNI_PACKAGE) {
-		res = VNI_PACKAGE->index[ident];
-	}
-	if(!res && PACKAGE) {
-		res = PACKAGE->index[ident];
-	}
 	if(!res) {
-		int pos = ident.find_last_of('.');
-		if(pos != string::npos) {
-			string package = ident.substr(0, pos);
-			string name = ident.substr(pos+1);
-			res = new Import(Package::get(package), name);
-		} else {
-			res = new Import(PACKAGE, ident);
-		}
+		res = PACKAGE->index[ident];
 	}
 	if(!res) {
 		std::cout << "Unable to resolve: " << ident << std::endl;
@@ -341,6 +297,7 @@ static Base* resolve(const string& ident) {
 
 struct init_type_system {
 	init_type_system() {
+		add(new Void());
 		add(new Bool());
 		add(new Integer("char", 1));
 		add(new Integer("short", 2));

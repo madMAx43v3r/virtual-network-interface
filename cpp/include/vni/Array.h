@@ -57,9 +57,10 @@ public:
 	}
 };
 
+namespace internal {
 
 template<typename T>
-void _vni_deserialize_array_special(vnl::io::TypeInput& in, int size, vnl::Array<T>& out) {
+void deserialize_array_special(vnl::io::TypeInput& in, int size, vnl::Array<T>& out) {
 	int id = in.getEntry(size);
 	if(id == VNL_IO_ARRAY) {
 		int num = size;
@@ -144,6 +145,7 @@ void _vni_deserialize_array_special(vnl::io::TypeInput& in, int size, vnl::Array
 	in.skip(VNL_IO_INTERFACE, 0);
 }
 
+} // internal
 
 #define _VNI_ARRAY_SPECIAL(T, io_id, io_size, io_write_func) \
 	template<> \
@@ -158,7 +160,7 @@ void _vni_deserialize_array_special(vnl::io::TypeInput& in, int size, vnl::Array
 			} \
 		} \
 		virtual void deserialize(vnl::io::TypeInput& in, int size) { \
-			_vni_deserialize_array_special(in, size, *this); \
+			internal::deserialize_array_special(in, size, *this); \
 		} \
 	};
 

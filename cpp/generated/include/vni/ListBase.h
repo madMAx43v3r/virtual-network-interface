@@ -36,10 +36,6 @@ public:
 		return "vni.List";
 	}
 	
-	class Client : public vni::Client {
-	public:
-	};
-	
 protected:
 	class Writer {
 	public:

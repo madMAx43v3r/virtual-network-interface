@@ -48,6 +48,13 @@ T* vni::create() {
 }
 
 template<typename T>
+T* vni::create(const T& other) {
+	T* obj = vni::Pool<T>::create();
+	*obj = other;
+	return obj;
+}
+
+template<typename T>
 void vni::destroy(T* obj) {
 	if(obj) {
 		obj->destroy();

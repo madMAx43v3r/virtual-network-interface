@@ -27,6 +27,7 @@ public:
 	static Value* create(vnl::Hash32 hash);
 	static Value* create() { return vni::create<vni::Value>(); }
 	
+	virtual Value* clone() { return vni::create<vni::Value>(*this); }
 	virtual void destroy() { vni::destroy<vni::Value>(this); }
 	
 	virtual uint32_t vni_hash() const { return VNI_HASH; }

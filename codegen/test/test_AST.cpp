@@ -12,7 +12,7 @@
 
 int main() {
 	
-	FILE = "test_AST.cpp";
+	CURR_FILE = "test_AST.cpp";
 	PACKAGE = new Package("test");
 	
 	Class* Value = new Class();

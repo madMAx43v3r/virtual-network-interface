@@ -1,11 +1,9 @@
 package test;
 
-import vni.String;
-
-object TestNode {
+node TestNode {
 	
 	int level = -1;
-	String instance = "blubb";
+	String instance = "blubb blubb";
 	
 	void handle(TestType ev);
 	

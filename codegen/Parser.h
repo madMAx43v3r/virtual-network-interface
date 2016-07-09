@@ -21,38 +21,40 @@ inline vector<string> split(const std::string& s, char delim) {
     return elems;
 }
 
-
-bool link_type(uint64_t hash, std::vector<pair<uint64_t, Base*> >& bound) {
-	if(!INDEX.count(hash)) {
-		cout << "error: unable to resolve " << NAMES[hash] << std::endl;
-		return false;
+inline pair<string, string> split_full_name(const std::string& ident) {
+	int pos = ident.find_last_of('.');
+	if(pos != string::npos) {
+		string package = ident.substr(0, pos);
+		string name = ident.substr(pos+1);
+		return make_pair(package, name);
+	} else {
+		return make_pair("", ident);
 	}
-	Base* base = INDEX[hash];
-	// TODO
-	return true;
-}
-
-bool link_all() {
-	// TODO
-	return true;
 }
 
 
 class Parser {
 public:
-	Parser(string filename) : file(filename), stream(filename, std::ifstream::in) {
+	Parser(string filename) : file_name(filename), stream(filename, std::ifstream::in) {
+		PACKAGE = 0;
+		CURR_FILE = file_name;
+		CURR_LINE = 0;
+		IMPORT.clear();
 		if(stream.fail()) {
 			cout << "error: unable to open " << filename << endl;
 		}
 	}
 	
 	virtual ~Parser() {
+		CURR_FILE = "<internal>";
+		CURR_LINE = -1;
 		stream.close();
 	}
 	
-	virtual bool parse() = 0;
+	virtual void first_pass() = 0;
+	virtual void second_pass() = 0;
 	
-	string file;
+	string file_name;
 	std::ifstream stream;
 	
 	

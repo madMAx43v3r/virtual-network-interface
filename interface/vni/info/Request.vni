@@ -1,0 +1,15 @@
+package vni.info;
+
+/*
+ * A Request will trigger the sending of information.
+ */
+
+enum request_type_t {
+	GET_PROCESS, GET_CLASS, GET_DEFAULT
+}
+
+class Request {
+	
+	request_type_t type;
+	
+}

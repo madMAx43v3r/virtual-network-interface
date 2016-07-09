@@ -12,42 +12,41 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <typeinfo>
+#include <assert.h>
 
 #include "CRC64.h"
 
+#define FAIL() assert(false);
+
+#define ERROR(msg) error() << #msg << endl; assert(false); exit(-1);
 
 using namespace std;
 
 class Package;
+class Base;
 class Type;
 
 
-static map<uint64_t, string> NAMES;
-static map<uint64_t, Base*> INDEX;
+static map<string, Base*> INDEX;
 
-static string FILE = "<unknown>";
-static string LINE = -1;
+static string CURR_FILE = "<unknown>";
+static int CURR_LINE = -1;
 
 static Package* PACKAGE = 0;
-static Type* TYPE = 0;
+static map<string, string> IMPORT;
 
 
 inline uint64_t hash64(const std::string& str) {
 	CRC64 hash;
 	hash.update(str.c_str(), str.size());
-	uint64_t val = hash.getValue();
-	NAMES[val] = str;
-	return val;
+	return hash.getValue();
 }
 
-inline void die() {
-	die(FILE, LINE);
+std::ostream& error() {
+	return cerr << CURR_FILE << ":" << CURR_LINE << ": error: ";
 }
 
-inline void die(string file, string line) {
-	std::cout << "In " << file << ":" << line << std::endl;
-	exit(-1);
-}
 
 
 class Base {
@@ -56,8 +55,8 @@ public:
 	string line;
 	
 	Base() {
-		file = FILE;
-		line = LINE;
+		file = CURR_FILE;
+		line = CURR_LINE;
 	}
 	virtual ~Base() {}
 	
@@ -82,21 +81,22 @@ public:
 	
 	Package(string name) : name(name) {}
 	
-	void add(Base* type) {
-		index[type->get_name()] = type;
-	}
-	
 	string get_name() {	return name; }
 	string get_full_name() { return name; }
 	
 	static Package* get(string name) {
-		uint64_t hash = hash64(name);
-		Package* res = INDEX[hash];
-		if(!res) {
-			res = new Package(name);
-			INDEX[hash] = res;
+		Base* base = INDEX[name];
+		if(!base) {
+			Package* pack = new Package(name);
+			INDEX[name] = pack;
+			return pack;
 		}
-		return res;
+		Package* pack = dynamic_cast<Package*>(base);
+		if(!pack) {
+			cout << "ERROR: invalid package name: " << name << endl;
+			FAIL();
+		}
+		return pack;
 	}
 };
 
@@ -129,7 +129,7 @@ public:
 	
 	virtual string get_name() { return name; }
 	virtual string get_full_name() { return name; }
-	virtual uint64_t get_hash() { return hash64("vni.ast.Integer"); }
+	virtual uint64_t get_hash() { return hash64("vni.ast.integer"); }
 };
 
 class Real : public Primitive {
@@ -141,7 +141,7 @@ public:
 	
 	virtual string get_name() { return name; }
 	virtual string get_full_name() { return name; }
-	virtual uint64_t get_hash() { return hash64("vni.ast.Real"); }
+	virtual uint64_t get_hash() { return hash64("vni.ast.real"); }
 };
 
 
@@ -162,7 +162,7 @@ public:
 	}
 	virtual uint64_t get_hash() {
 		CRC64 hash;
-		hash.update("vni.ast.Array");
+		hash.update("vni.ast.array");
 		hash.update(type->get_hash());
 		return hash.getValue();
 	}
@@ -172,8 +172,10 @@ public:
 class Field : public Base {
 public:
 	Base* type = 0;
+	vector<Base*> tmpl_types;
 	string name;
 	string value;
+	bool is_const = false;
 	
 	virtual string get_name() { return name; }
 	virtual string get_full_name() { return type->get_full_name() + " " + name; }
@@ -195,6 +197,7 @@ public:
 class Method : public Base {
 public:
 	Base* type = 0;
+	vector<Base*> tmpl_types;
 	string name;
 	vector<Param*> params;
 	bool is_const = false;
@@ -224,6 +227,8 @@ public:
 	Type(string name) : name(name) {
 		package = PACKAGE;
 		package->index[name] = this;
+		string full = package->name + "." + name;
+		INDEX[full] = this;
 	}
 	
 	virtual string get_name() { return name; }
@@ -233,8 +238,9 @@ public:
 
 class Enum : public Type {
 public:
-	string name;
 	vector<string> values;
+	
+	Enum(string name) : Type(name) {}
 	
 };
 
@@ -244,30 +250,35 @@ public:
 	vector<Field*> fields;
 	vector<Field*> constants;
 	
+	Struct(string name) : Type(name) {}
+	
 };
 
 
 class Class : public Struct {
 public:
-	Type* super = 0;
+	Class* super = 0;
+	
+	Class(string name) : Struct(name) {}
 	
 };
 
 
 class Interface : public Class {
 public:
-	vector<string> params;
+	vector<string> generic;
 	vector<Method*> methods;
 	
-	Interface() {
-		
-	}
+	Interface(string name) : Class(name) {}
+	
 };
 
 
 class Object : public Interface {
 public:
+	vector<Interface*> implements;
 	
+	Object(string name) : Interface(name) {}
 	
 };
 
@@ -275,22 +286,33 @@ public:
 class Node : public Object {
 public:
 	
+	Node(string name) : Object(name) {}
 	
 };
 
 
 
+static Base* resolve(const string& ident);
 
-static Base* resolve(const string& ident) {
-	Base* res = INDEX[hash64(ident)];
+template<typename T>
+static T* resolve(const string& ident) {
+	Base* res = INDEX[ident];
+	if(!res && IMPORT.count(ident)) {
+		res = resolve(IMPORT[ident]);
+	}
 	if(!res) {
 		res = PACKAGE->index[ident];
 	}
-	if(!res) {
-		std::cout << "Unable to resolve: " << ident << std::endl;
-		die();
+	T* type = dynamic_cast<T*>(res);
+	if(!type) {
+		error() << "unable to resolve: " << ident << std::endl;
+		FAIL();
 	}
-	return res;
+	return type;
+}
+
+static Base* resolve(const string& ident) {
+	return resolve<Base>(ident);
 }
 
 

@@ -1,5 +1,7 @@
 package vni;
 
+import vni.info.Class;
+
 // Note: Object is the base class for all objects.
 // Note: Object inherits implicitly from Interface.
 

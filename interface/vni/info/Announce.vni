@@ -1,4 +1,4 @@
-package vni;
+package vni.info;
 
 class Announce {
 	

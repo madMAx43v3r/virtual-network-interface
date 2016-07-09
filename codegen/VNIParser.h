@@ -24,383 +24,436 @@ using namespace std;
 
 class VNIParser : public Parser {
 public:
-	
-	uint64_t resolve(string ident, bool relax = false) {
-		if(this_base) {
-			// check if own name
-			if(this_base->name == ident) {
-				return this_base->get_hash();
-			}
-			// check if template parameter
-			int i = 0;
-			for(string str : this_base->generics) {
-				if(str == ident) {
-					return TmplType::get_index_hash(i);
-				}
-				i++;
-			}
-		}
-		// check if already defined
-		uint64_t hash = hash64(ident);
-		if(INDEX.count(hash)) {
-			if(relax) {
-				Primitive* prim = dynamic_cast<Primitive*>(INDEX[hash]);
-				if(prim) {
-					return prim->class_hash;
-				}
-			}
-			return hash;
-		}
-		// check if qualified
-		if(ident.find('.') != string::npos) {
-			return hash;
-		}
-		// check if imported
-		if(imports.count(ident)) {
-			return imports[ident];
-		}
-		// last resort, it's defined in currrent package
-		string full_ident = package + "." + ident;
-		uint64_t hash = hash64(full_ident);
-		NAMES[hash] = full_ident;
-		return hash;
+	VNIParser(string filename) : Parser(filename) {
+		
 	}
 	
-	virtual bool parse() override {
-		/*
-		 * PACKAGE
-		 */
-		if(next() == "package") {
-			package = next();
-			if(next() != ";") {
-				return error("expected ; after package");
-			}
-		} else {
-			return error("expected package definition");
-		}
-		
-		/*
-		 * IMPORT
-		 */
-		while(stream.good()) {
-			token = next();
-			if(token == "import") {
-				token = next();
-				if(next() != ";") {
-					return error("expected ; after import");
-				}
-				vector<string> toks = split(token, '.');
-				uint64_t hash = hash64(token);
-				imports[toks.back()] = hash;
-				NAMES[hash] = token;
+	virtual void first_pass() {
+		parse_package();
+		token = read_token();
+		parse_imports();
+		while(!end_of_file) {
+			string keyword = token;
+			string name = read_token();
+			Base* base = 0;
+			if(keyword == "enum") {
+				base = new Enum(name);
+				cout << "  ENUM " << name << endl;
+			} else if(keyword == "struct") {
+				base = new Struct(name);
+				cout << "  STRUCT " << name << endl;
+			} else if(keyword == "class") {
+				base = new Class(name);
+				cout << "  CLASS " << name << endl;
+			} else if(keyword == "interface") {
+				base = new Interface(name);
+				cout << "  INTERFACE " << name << endl;
+			} else if(keyword == "object") {
+				base = new Object(name);
+				cout << "  OBJECT " << name << endl;
+			} else if(keyword == "node") {
+				base = new Node(name);
+				cout << "  NODE " << name << endl;
 			} else {
-				break;
+				ERROR("expected type definition");
 			}
+			skip_type();
+			token = read_token();
 		}
-		
-	block_loop:
-		this_base = 0;
-		this_type = 0;
-		this_iface = 0;
-		/*
-		 * CLASS | INTERFACE | TYPEDEF | EXTERN
-		 */
-		if(token == "class") {
-			this_type = new Type();
-			this_base = this_type;
-		} else if(token == "interface") {
-			this_iface = new Interface();
-			this_type = this_iface;
-			this_base = this_iface;
-		} else if(token == "typedef") {
-			Typedef* type = new Typedef();
-			type->package = package;
-			type->type_hash = resolve(next());
-			type->generics = parse_generics();
-			type->name = token;
-			if(next() != ";") {
-				return error("expected ; after typedef");
+	}
+	
+	virtual void second_pass() {
+		parse_package();
+		read_token();
+		parse_imports();
+		while(!end_of_file) {
+			string keyword = token;
+			string name = read_token();
+			Base* p_base = 0;
+			Enum* p_enum = 0;
+			Struct* p_struct = 0;
+			Class* p_class = 0;
+			Interface* p_interface = 0;
+			Object* p_object = 0;
+			Node* p_node = 0;
+			if(keyword == "enum") {
+				p_enum = new Enum(name);
+				cout << "  ENUM " << name << endl;
+			} else if(keyword == "struct") {
+				p_struct = new Struct(name);
+				cout << "  STRUCT " << name << endl;
+			} else if(keyword == "class") {
+				p_class = new Class(name);
+				cout << "  CLASS " << name << endl;
+			} else if(keyword == "interface") {
+				p_interface = new Interface(name);
+				cout << "  INTERFACE " << name << endl;
+			} else if(keyword == "object") {
+				p_object = new Object(name);
+				cout << "  OBJECT " << name << endl;
+			} else if(keyword == "node") {
+				p_node = new Node(name);
+				cout << "  NODE " << name << endl;
 			}
-			uint64_t hash = type->get_hash();
-			if(!INDEX.count(hash)) {
-				INDEX[hash] = type;
-				TYPEDEFS[hash] = type;
-			} else {
-				return error("invalid re-definition of " + type->full_name());
+			if(p_node) {
+				p_object = p_node;
 			}
-		} else if(token == "extern") {
-			Base* type = new Base();
-			type->isextern = true;
-			type->package = package;
-			type->name = next();
-			if(next() != ";") {
-				return error("expected ; after typedef");
+			if(p_object) {
+				p_interface = p_object;
 			}
-			uint64_t hash = type->get_hash();
-			if(!INDEX.count(hash)) {
-				INDEX[hash] = type;
-			} else {
-				return error("invalid re-definition of " + type->full_name());
+			if(p_interface) {
+				p_class = p_interface;
 			}
-		} else {
-			return error("expected typedef, extern, class or interface");
-		}
-		
-		/*
-		 * CLASS | INTERFACE
-		 */
-		this_base->package = package;
-		this_base->name = next();
-		
-		vector<string> tmpl = parse_generics();
-		if(tmpl.size()) {
-			this_base->isgeneric = true;
-			this_base->generics = tmpl;
-		}
-		if(token == "extends") {
-			token = next();
-			this_base->super_hash = resolve(token);
-			this_base->super_generics = parse_generics();
-			if(this_base->super_generics.size()) {
-				for(string str : this_base->super_generics) {
-					this_base->super_bound.push_back(std::make_pair(resolve(str), (Base*)0));
+			if(p_class) {
+				p_struct = p_class;
+			}
+			if(p_struct) {
+				p_base = p_struct;
+			}
+			if(p_enum) {
+				p_base = p_enum;
+			}
+			if(!p_base) {
+				ERROR("expected type definition");
+			}
+			read_token();
+			if(p_enum) {
+				parse_enum(p_enum);
+				read_token();
+				continue;
+			}
+			if(p_interface) {
+				p_interface->generic = parse_generics();
+			}
+			if(token == "extends") {
+				if(!p_class) {
+					ERROR("only class can inherit");
+				}
+				string super = read_token();
+				cout << "  EXTENDS " << super << endl;
+				p_class->super = resolve<Class>(super);
+				read_token();
+			}
+			if(token == "implements") {
+				if(!p_object) {
+					ERROR("only object can implement");
+				}
+				read_token();
+				while(token != "{" && !end_of_file) {
+					p_object->implements.push_back(resolve<Interface>(token));
+					cout << "  IMPLEMENTS " << token << endl;
+					read_token();
 				}
 			}
-		}
-		if(token != "{") {
-			return error("expected { for class definition");
-		}
-		
-		/*
-		 * METHOD | FIELD | ENUM | CONSTANT
-		 */
-		while(stream.good()) {
-			token = next();
-			if(token == "enum") {
-				/*
-				 * ENUM
-				 */
-				// TODO
-			} else if(token == "static") {
-				/*
-				 * CONSTANT
-				 */
-				if(next() != "const") {
-					return error("expected const after static");
+			if(token != "{") {
+				ERROR("expeced {");
+			}
+			// type body loop
+			while(!end_of_file) {
+				read_token();
+				if(token == "}") {
+					read_token();
+					break;
 				}
-				// TODO
-			} else if(token != "}") {
-				/*
-				 * METHOD | FIELD
-				 */
-				string type_name = token;
-				vector<string> tmpl = parse_generics();
-				vector<pair<uint64_t, Base*> > bound;
-				if(tmpl.size()) {
-					for(string str : tmpl) {
-						bound.push_back(std::make_pair(resolve(str), (Base*)0));
-					}
+				
+				bool is_const = false;
+				if(token == "const") {
+					is_const = true;
+					read_token();
 				}
+				
+				string type = token;
+				read_token();
+				vector<Base*> tmpl_params = parse_tmpl_types();
 				string name = token;
-				token = next();
-				if(token == "(") {
-					/*
-					 * METHOD
-					 */
-					if(!this_iface) {
-						return error("invalid method definition");
+				read_token();
+				Field* field = 0;
+				Method* method = 0;
+				if(token == ";") {
+					if(!p_struct) {
+						ERROR("cannot have fields here");
 					}
-					Method* func = new Method();
-					token = next();
-					while(token != ")" && stream.good()) {
-						Param* param = new Param();
-						param->type_hash = resolve(next(), true);
-						param->generics = parse_generics();
-						if(param->generics.size()) {
-							for(string str : param->generics) {
-								param->bound.push_back(std::make_pair(resolve(str), (Base*)0));
-							}
-						}
-						param->name = token;
-						func->params.push_back(param);
-						token = next();
+					field = new Field();
+					field->type = resolve(type);
+					p_struct->fields.push_back(field);
+					cout << "    FIELD " << type << " " << name << endl;
+				} else if(token == "=") {
+					if(!p_struct) {
+						ERROR("cannot have fields here");
 					}
-					func->type_hash = resolve(type_name, true);
-					func->package = this_base->full_name();
-					func->name = name;
-					func->generics = tmpl;
-					func->bound = bound;
-					
-					if(!this_iface->add_method(func)) {
-						return error("invalid re-definition of method " + name);
-					}
-				} else {
-					/*
-					 * FIELD
-					 */
-					Field* field = new Field();
-					field->package = this_base->full_name();
-					field->name = name;
-					field->generics = tmpl;
-					field->bound = bound;
-					if(token == "[") {
-						/*
-						 * ARRAY
-						 */
-						token = next();
-						int size = atol(token.c_str());
-						if(size <= 0) {
-							return error("array must be larger than zero");
-						}
-						Array* array = new Array();
-						array->type_hash = resolve(type_name);
-						array->size = size;
-						field->type = array;
-						field->type_hash = array->get_hash();
-					} else if(token == "=") {
-						field->value = next();
-						if(field->value == "null") {
-							field->isnull = true;
-						}
-						if(next() == ";") {
-							field->type_hash = resolve(type_name, true);
-						} else {
-							return error("expected ; after field");
-						}
-					} else if(token == ";") {
-						field->type_hash = resolve(type_name, true);
+					string value = read_token();
+					field = new Field();
+					field->type = resolve(type);
+					field->value = value;
+					if(is_const) {
+						p_struct->constants.push_back(field);
+						cout << "    CONST " << type << " " << name << " = " << value << endl;
 					} else {
-						return error("expected [ or ; after field name");
+						p_struct->fields.push_back(field);
+						cout << "    FIELD " << type << " " << name << " = " << value << endl;
 					}
-					
-					if(!this_type->add_field(field)) {
-						return error("invalid re-definition of field " + name);
+					if(read_token() != ";") {
+						ERROR("expected ; after field");
 					}
+				} else if(token == "[") {
+					read_token();
+					int size = atoi(token.c_str());
+					if(size <= 0) {
+						ERROR("invalid array size");
+					}
+					field = new Field();
+					Array* array = new Array();
+					array->type = resolve(type);
+					array->size = size;
+					field->type = array;
+					p_struct->fields.push_back(field);
+					if(read_token() != "]") {
+						ERROR("expected ] after [");
+					}
+					if(read_token() != ";") {
+						ERROR("expected ; after field");
+					}
+					cout << "    FIELD " << type << " " << name << " ARRAY " << size << endl;
+				} else if(token == "(") {
+					method = new Method();
+					method->name = name;
+					method->type = resolve(type);
+					method->tmpl_types = tmpl_params;
+					read_token();
+					cout << "    METHOD " << type << " " << name;
+					while(token != ")" && !end_of_file) {
+						string type_ = token;
+						string name_ = read_token();
+						Param* param = new Param();
+						param->type = resolve(type_);
+						param->name = name_;
+						method->params.push_back(param);
+						cout << " [" << type_ << " " << name_ << "]";
+						read_token();
+						if(token == ",") {
+							read_token();
+						} else if(token != ")") {
+							ERROR("expected , or )");
+						}
+					}
+					read_token();
+					if(token == ";") {
+						method->is_const = false;
+					} else if(token == "const") {
+						method->is_const = true;
+						cout << " CONST";
+						read_token();
+						if(token != ";") {
+							ERROR("expected ;");
+						}
+					} else {
+						ERROR("expected ; or const");
+					}
+					cout << endl;
 				}
+				
+				if(field) {
+					field->tmpl_types = tmpl_params;
+					field->name = name;
+					field->is_const = is_const;
+				}
+				
+			} // type body loop
+			
+		} // file loop
+		
+	}
+	
+	void parse_package() {
+		if(read_token() == "package") {
+			string name = read_token();
+			cout << "PACKAGE " << name << endl;
+			PACKAGE = Package::get(name);
+			if(read_token() != ";") {
+				ERROR("expected ; after package");
+			}
+		} else {
+			ERROR("expected package definition");
+		}
+	}
+	
+	void parse_imports() {
+		while(!end_of_file) {
+			if(token == "import") {
+				string name = read_token();
+				if(read_token() != ";") {
+					ERROR("expected ; after import");
+				}
+				auto tmp = split_full_name(name);
+				IMPORT[tmp.second] = name;
+				cout << "IMPORT " << tmp.second << " FROM " << tmp.first << endl;
+				read_token();
 			} else {
 				break;
 			}
 		}
-		
-		/*
-		 * FINISHED
-		 */
-		if(stream.good()) {
-			uint64_t hash = this_base->get_hash();
-			if(!INDEX.count(hash)) {
-				INDEX[hash] = this_base;
-				if(this_type) {
-					TYPES[hash] = this_type;
-				} else if(this_iface) {
-					INTERFACES[hash] = this_iface;
-				}
-			} else {
-				return error("invalid re-definition of " + this_base->name);
-			}
-			token = next();
-			if(stream.good()) {
-				goto block_loop;
+	}
+	
+	void skip_type() {
+		while(!end_of_file) {
+			read_token();
+			if(token == "{") {
+				break;
+			} else if(token == ";") {
+				ERROR("expected type definition");
 			}
 		}
-		return true;
+		int stack = 1;
+		while(!end_of_file) {
+			read_token();
+			if(token == "{") {
+				stack++;
+			} else if(token == "}") {
+				stack--;
+				if(stack == 0) {
+					break;
+				}
+			}
+		}
+	}
+	
+	void parse_enum(Enum* type) {
+		if(token != "{") {
+			ERROR("expected {");
+		}
+		while(token != "}" && !end_of_file) {
+			read_token();
+			type->values.push_back(token);
+			cout << "    " << token << endl;
+			read_token();
+			if(token != "," && token != "}") {
+				ERROR("expected , or }");
+			}
+		}
 	}
 	
 	vector<string> parse_generics() {
 		vector<string> res;
-		token = next();
 		if(token == "<") {
-			while(stream.good()) {
-				res.push_back(next());
-				token = next();
+			while(!end_of_file) {
+				string param = read_token();
+				res.push_back(param);
+				read_token();
 				if(token == ">") {
 					break;
 				} else if(token != ",") {
-					return error("expected , or > after opening <");
+					ERROR("expected , or > after opening <");
 				}
 			}
-			token = next();
+			read_token();
 		}
 		return res;
 	}
 	
-	string next() {
-		string tok;
-		bool skip = false;
-		while(true) {
-			char c = stream.peek();
-			if(stream.fail()) { break; }
+	vector<Base*> parse_tmpl_types() {
+		vector<Base*> res;
+		vector<string> strings = parse_generics();
+		for(string& str : strings) {
+			res.push_back(resolve(str));
+		}
+		return res;
+	}
+	
+	void parse_comment() {
+		string text;
+		int c;
+		do {
+			c = stream.get();
+			text += c;
+		} while(c != '\n' && stream.good());
+		CURR_LINE++;
+		cout << "COMMENT //" << text;
+	}
+	
+	void parse_comment_multi() {
+		string text;
+		int c;
+		do {
+			c = stream.get();
 			if(c == '\n') {
-				curr_line++;
+				CURR_LINE++;
 			}
-			if(c == ' ' || c == '\t' || c == '\n') {
+			text += c;
+		} while((text.size() < 2 || text.substr(text.size()-2) != "*/") && stream.good());
+		cout << "COMMENT \n/*" << text << endl;
+	}
+	
+	string parse_string() {
+		string text;
+		text += stream.get();
+		bool escape = false;
+		int c;
+		do {
+			c = stream.get();
+			if(!escape && c == '\\') {
+				text += c;
+				escape = true;
+				c = 0;
+				continue;
+			}
+			text += c;
+			if(escape) {
+				escape = false;
+				c = 0;
+				continue;
+			}
+		} while(c != '"' && stream.good());
+		return text;
+	}
+	
+	string read_token() {
+		token.clear();
+		is_text = false;
+		while(true) {
+			int c = stream.peek();
+			if(stream.fail() || c == EOF) {
+				end_of_file = true;
+				break;
+			}
+			if(c == '\n') {
+				CURR_LINE++;
+			}
+			if(c == '"') {
+				token = parse_string();
+				break;
+			} else if(token == "//") {
+				parse_comment();
+				token.clear();
+			} else if(token == "/*") {
+				parse_comment_multi();
+				token.clear();
+			} else if(c == ' ' || c == '\t' || c == '\n') {
 				stream.get();
-				if(tok.size()) {
+				if(token.size()) {
 					break;
 				}
 			} else if(	   c == ',' || c == ':' || c == ';' || c == '(' || c == ')' || c == '[' || c == ']' || c == '<' || c == '>'
-						|| c == '!' || c == '@' || c == '#' || c == '$' || c == '^' || c == '&' || c == '+' || c == '-'
-						|| c == '=' || c == '?' || c == '~' || c == '\\'	)
+						|| c == '!' || c == '@' || c == '#' || c == '$' || c == '^' || c == '&' || c == '=' || c == '?' || c == '~'	)
 			{
-				if(tok.size()) {
+				if(token.size()) {
 					break;
 				} else {
 					stream.get();
-					tok += c;
-					break;
-				}
-			} else if(c == '/') {
-				if(skip) {
-					do {
-						c = stream.get();
-					} while(c != '\n' && stream.good());
-					skip = false;
-					curr_line++;
-				} else {
-					stream.get();
-					skip = true;
-				}
-			} else if(c == '*') {
-				if(skip) {
-					do {
-						c = stream.get();
-						if(c == '\n') { curr_line++; }
-						skip = (c == '*');
-					} while(!(c == '/' && skip) && stream.good());
-					skip = false;
-				} else {
-					if(!tok.size()) {
-						stream.get();
-						tok += c;
-					}
+					token += c;
 					break;
 				}
 			} else {
-				if(skip) {
-					skip = false;
-				}
 				stream.get();
-				tok += c;
+				token += c;
 			}
 		}
-		return tok;
-	}
-	
-	std::ostream& error() {
-		return cout << file << ":" << curr_line << ": error: ";
-	}
-	
-	bool error(string msg) {
-		error() << msg << endl;
-		return false;
+		//cout << "TOKEN " << token << endl;
+		return token;
 	}
 	
 	string token;
-	int curr_line = 0;
-	string package;
-	map<string, uint64_t> imports;
-	Base* this_base = 0;
-	Type* this_type = 0;
-	Interface* this_iface = 0;
+	bool is_text = false;
+	bool end_of_file = false;
 	
 	
 };

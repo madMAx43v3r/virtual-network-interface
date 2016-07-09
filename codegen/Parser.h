@@ -10,6 +10,9 @@
 
 #include "AST.h"
 
+namespace vni {
+namespace codegen {
+
 
 inline vector<string> split(const std::string& s, char delim) {
     std::vector<std::string> elems;
@@ -41,7 +44,8 @@ public:
 		CURR_LINE = 0;
 		IMPORT.clear();
 		if(stream.fail()) {
-			cout << "error: unable to open " << filename << endl;
+			error() << "error: unable to open " << filename << endl;
+			FAIL();
 		}
 	}
 	
@@ -61,5 +65,7 @@ public:
 };
 
 
+
+}}
 
 #endif /* INCLUDE_PARSER_H_ */

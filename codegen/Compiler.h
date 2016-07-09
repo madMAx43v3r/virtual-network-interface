@@ -12,6 +12,9 @@
 #include "VNIParser.h"
 
 
+namespace vni {
+namespace codegen {
+
 template<typename TParser>
 class Compiler {
 public:
@@ -45,7 +48,7 @@ public:
 			parse_dir(root);
 		}
 		check();
-		generate();
+		postprocess();
 	}
 	
 	virtual void parse_dir(string path) {
@@ -85,16 +88,16 @@ public:
 		// TODO
 	}
 	
-	virtual void update(string file_name, string content) {
+	virtual void postprocess() {
 		
 	}
-	
-	virtual void generate() = 0;
 	
 protected:
 	int curr_pass = 1;
 	
 };
 
+
+}}
 
 #endif /* INCLUDE_VNI_COMPILER_H_ */

@@ -8,6 +8,7 @@
 #ifndef INCLUDE_AST_H_
 #define INCLUDE_AST_H_
 
+#include <set>
 #include <map>
 #include <vector>
 #include <string>
@@ -22,6 +23,9 @@
 #define ERROR(msg) error() << #msg << endl; assert(false); exit(-1);
 
 using namespace std;
+
+namespace vni {
+namespace codegen {
 
 class Package;
 class Base;
@@ -101,10 +105,6 @@ public:
 };
 
 
-enum {
-	BYTE = 1, WORD = 2, DWORD = 4, QWORD = 8
-};
-
 class Void : public Base {
 	virtual string get_name() { return "void"; }
 	virtual string get_full_name() { return "void"; }
@@ -145,7 +145,7 @@ public:
 };
 
 
-class Array : public Primitive {
+class Array : public Base {
 public:
 	Base* type = 0;
 	int size = 0;
@@ -224,11 +224,16 @@ public:
 	Package* package;
 	string name;
 	
+	set<string> imports;
+	
 	Type(string name) : name(name) {
 		package = PACKAGE;
 		package->index[name] = this;
 		string full = package->name + "." + name;
 		INDEX[full] = this;
+		for(auto& entry : IMPORT) {
+			imports.insert(entry.second);
+		}
 	}
 	
 	virtual string get_name() { return name; }
@@ -240,7 +245,9 @@ class Enum : public Type {
 public:
 	vector<string> values;
 	
-	Enum(string name) : Type(name) {}
+	Enum(string name) : Type(name) {
+		imports.insert("vni.Value");
+	}
 	
 };
 
@@ -250,7 +257,9 @@ public:
 	vector<Field*> fields;
 	vector<Field*> constants;
 	
-	Struct(string name) : Type(name) {}
+	Struct(string name) : Type(name) {
+		imports.insert("vni.Value");
+	}
 	
 };
 
@@ -259,7 +268,9 @@ class Class : public Struct {
 public:
 	Class* super = 0;
 	
-	Class(string name) : Struct(name) {}
+	Class(string name) : Struct(name) {
+		imports.insert("vni.Value");
+	}
 	
 };
 
@@ -269,7 +280,9 @@ public:
 	vector<string> generic;
 	vector<Method*> methods;
 	
-	Interface(string name) : Class(name) {}
+	Interface(string name) : Class(name) {
+		imports.insert("vni.Interface");
+	}
 	
 };
 
@@ -278,7 +291,9 @@ class Object : public Interface {
 public:
 	vector<Interface*> implements;
 	
-	Object(string name) : Interface(name) {}
+	Object(string name) : Interface(name) {
+		imports.insert("vni.Object");
+	}
 	
 };
 
@@ -286,7 +301,9 @@ public:
 class Node : public Object {
 public:
 	
-	Node(string name) : Object(name) {}
+	Node(string name) : Object(name) {
+		imports.insert("vni.Node");
+	}
 	
 };
 
@@ -339,11 +356,6 @@ static init_type_system init_type_system_;
 
 
 
-
-
-
-
-
-
+}}
 
 #endif /* INCLUDE_AST_H_ */

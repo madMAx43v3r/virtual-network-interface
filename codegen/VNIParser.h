@@ -22,6 +22,9 @@ using namespace std;
 #include "Parser.h"
 
 
+namespace vni {
+namespace codegen {
+
 class VNIParser : public Parser {
 public:
 	VNIParser(string filename) : Parser(filename) {
@@ -69,6 +72,7 @@ public:
 		while(!end_of_file) {
 			string keyword = token;
 			string name = read_token();
+			string full_name = PACKAGE->name + "." + name;
 			Base* p_base = 0;
 			Enum* p_enum = 0;
 			Struct* p_struct = 0;
@@ -77,22 +81,22 @@ public:
 			Object* p_object = 0;
 			Node* p_node = 0;
 			if(keyword == "enum") {
-				p_enum = new Enum(name);
+				p_enum = resolve<Enum>(full_name);
 				cout << "  ENUM " << name << endl;
 			} else if(keyword == "struct") {
-				p_struct = new Struct(name);
+				p_struct = resolve<Struct>(full_name);
 				cout << "  STRUCT " << name << endl;
 			} else if(keyword == "class") {
-				p_class = new Class(name);
+				p_class = resolve<Class>(full_name);
 				cout << "  CLASS " << name << endl;
 			} else if(keyword == "interface") {
-				p_interface = new Interface(name);
+				p_interface = resolve<Interface>(full_name);
 				cout << "  INTERFACE " << name << endl;
 			} else if(keyword == "object") {
-				p_object = new Object(name);
+				p_object = resolve<Object>(full_name);
 				cout << "  OBJECT " << name << endl;
 			} else if(keyword == "node") {
-				p_node = new Node(name);
+				p_node = resolve<Node>(full_name);
 				cout << "  NODE " << name << endl;
 			}
 			if(p_node) {
@@ -380,7 +384,7 @@ public:
 			}
 			text += c;
 		} while((text.size() < 2 || text.substr(text.size()-2) != "*/") && stream.good());
-		cout << "COMMENT \n/*" << text << endl;
+		cout << "COMMENT\n/*" << text << endl;
 	}
 	
 	string parse_string() {
@@ -408,7 +412,6 @@ public:
 	
 	string read_token() {
 		token.clear();
-		is_text = false;
 		while(true) {
 			int c = stream.peek();
 			if(stream.fail() || c == EOF) {
@@ -432,8 +435,10 @@ public:
 				if(token.size()) {
 					break;
 				}
-			} else if(	   c == ',' || c == ':' || c == ';' || c == '(' || c == ')' || c == '[' || c == ']' || c == '<' || c == '>'
-						|| c == '!' || c == '@' || c == '#' || c == '$' || c == '^' || c == '&' || c == '=' || c == '?' || c == '~'	)
+			} else if(	c == ',' || c == ':' || c == ';' || c == '(' || c == ')'
+					 || c == '[' || c == ']' || c == '<' || c == '>' || c == '!'
+					 || c == '@' || c == '#' || c == '$' || c == '^' || c == '&'
+					 || c == '=' || c == '?' || c == '~' || c == '%')
 			{
 				if(token.size()) {
 					break;
@@ -452,7 +457,6 @@ public:
 	}
 	
 	string token;
-	bool is_text = false;
 	bool end_of_file = false;
 	
 	
@@ -460,6 +464,6 @@ public:
 
 
 
-
+}}
 
 #endif /* INCLUDE_VNIPARSER_H_ */

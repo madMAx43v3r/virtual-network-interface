@@ -57,7 +57,6 @@ public:
 	}
 	
 	virtual void serialize(vnl::io::TypeOutput& out) const {
-		Writer wr(out);
 		out.putBinary(data, size);
 	}
 	
@@ -66,7 +65,6 @@ public:
 			data = vnl::Page::alloc();
 		}
 		in.getBinary(data, size);
-		in.skip(VNL_IO_INTERFACE, 0);
 	}
 	
 };

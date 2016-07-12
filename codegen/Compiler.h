@@ -23,13 +23,14 @@ public:
 	virtual ~Compiler() {}
 	
 	virtual void register_default() {
+		INDEX["Value"] = resolve("vni.Value");
 		INDEX["Bool"] = resolve("vni.Bool");
 		INDEX["Integer"] = resolve("vni.Integer");
 		INDEX["Real"] = resolve("vni.Real");
+		INDEX["Binary"] = resolve("vni.Binary");
 		INDEX["String"] = resolve("vni.String");
 		INDEX["Array"] = resolve("vni.Array");
 		INDEX["List"] = resolve("vni.List");
-		INDEX["Value"] = resolve("vni.Value");
 	}
 	
 	virtual void compile() {

@@ -31,9 +31,10 @@ int main(int argc, char** argv) {
 	compiler.compile();
 	
 	cpp::Generator gen;
-	gen.generate_header(resolve<Type>("vni.Value"));
-	cout << endl << gen.out.str();
+	//gen.generate_header(resolve<Type>("vni.Value"));
+	//cout << endl << gen.out.str();
+	//gen.update("include/", "test.h", gen.out.str());
 	
-	gen.update("test.h", gen.out.str());
+	gen.generate_all();
 	
 }

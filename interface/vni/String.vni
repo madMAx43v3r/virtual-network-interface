@@ -1,5 +1,3 @@
 package vni;
 
-interface String {
-	
-}
+interface String {}

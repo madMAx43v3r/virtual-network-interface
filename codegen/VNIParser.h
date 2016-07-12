@@ -128,6 +128,9 @@ public:
 			}
 			if(p_interface) {
 				p_interface->generic = parse_generics();
+				for(string& gen : p_interface->generic) {
+					cout << "    GENERIC " << gen << endl;
+				}
 			}
 			if(token == "extends") {
 				if(!p_class) {
@@ -228,8 +231,9 @@ public:
 					while(token != ")" && !end_of_file) {
 						string type_ = token;
 						string name_ = read_token();
-						Param* param = new Param();
+						Field* param = new Field();
 						param->type = resolve(type_);
+						param->tmpl_types = tmpl_params;
 						param->name = name_;
 						method->params.push_back(param);
 						cout << " [" << type_ << " " << name_ << "]";
@@ -438,7 +442,8 @@ public:
 			} else if(	c == ',' || c == ':' || c == ';' || c == '(' || c == ')'
 					 || c == '[' || c == ']' || c == '<' || c == '>' || c == '!'
 					 || c == '@' || c == '#' || c == '$' || c == '^' || c == '&'
-					 || c == '=' || c == '?' || c == '~' || c == '%')
+					 || c == '=' || c == '?' || c == '~' || c == '%'
+					 || c == '{' || c == '}' )
 			{
 				if(token.size()) {
 					break;

@@ -183,23 +183,12 @@ public:
 };
 
 
-class Param : public Base {
-public:
-	Base* type = 0;
-	string name;
-	
-	virtual string get_name() { return name; }
-	virtual string get_full_name() { return type->get_full_name() + " " + name; }
-	virtual uint64_t get_hash() { return hash64(name); }
-};
-
-
 class Method : public Base {
 public:
 	Base* type = 0;
 	vector<Base*> tmpl_types;
 	string name;
-	vector<Param*> params;
+	vector<Field*> params;
 	bool is_const = false;
 	
 	virtual string get_name() { return name; }
@@ -257,6 +246,8 @@ public:
 	vector<Field*> fields;
 	vector<Field*> constants;
 	
+	vector<Field*> all_fields;
+	
 	Struct(string name) : Type(name) {
 		imports.insert("vni.Value");
 	}
@@ -279,6 +270,8 @@ class Interface : public Class {
 public:
 	vector<string> generic;
 	vector<Method*> methods;
+	
+	vector<Method*> all_methods;
 	
 	Interface(string name) : Class(name) {
 		imports.insert("vni.Interface");

@@ -20,14 +20,13 @@ class TestType : public vni::Value {
 public:
 	static const uint32_t VNI_HASH = 0x5df232ab;
 	
-	TestValue* val = 0;
+	vni::Pointer<TestValue> val = 0;
 	value_t val2;
 	
 	vni::List<TestValue> list;
 	vni::List<value_t> list2;
 	
 	TestType() {
-		vni_hash_ = VNI_HASH;
 	}
 	
 	~TestType() {

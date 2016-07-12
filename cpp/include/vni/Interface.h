@@ -15,6 +15,8 @@ namespace vni {
 
 class Interface : public Value {
 public:
+	static const int NOT_IMPLEMENTED = 0;
+	
 	virtual void deserialize(vnl::io::TypeInput& in, int size) {
 		int stack = 1;
 		while(!in.error()) {

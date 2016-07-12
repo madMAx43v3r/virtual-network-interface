@@ -29,7 +29,7 @@ public:
 	
 	Value& operator=(const Value& other);
 	
-	virtual Value* clone() { return vni::create<vni::Value>(*this); }
+	virtual Value* clone() const { return vni::create<vni::Value>(*this); }
 	virtual void destroy() { vni::destroy<vni::Value>(this); }
 	
 	virtual uint32_t vni_hash() const { return VNI_HASH; }

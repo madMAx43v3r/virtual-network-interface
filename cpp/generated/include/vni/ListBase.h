@@ -30,6 +30,7 @@ public:
 	static List<T>* create(vnl::Hash32 hash);
 	static List<T>* create() { return vni::create<vni::List<T> >(); }
 	
+	virtual List<T>* clone() const { return vni::create<List<T> >(*this); }
 	virtual void destroy() { vni::destroy<vni::List<T> >(this); }
 	
 	virtual const char* vni_type_name() const {

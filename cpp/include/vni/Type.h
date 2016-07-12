@@ -10,8 +10,7 @@
 
 #include <vnl/io.h>
 #include <vnl/Vector.h>
-
-#include "Pool.h"
+#include <vni/Pointer.h>
 
 
 namespace vni {

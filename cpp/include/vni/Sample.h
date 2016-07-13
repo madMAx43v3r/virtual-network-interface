@@ -8,8 +8,8 @@
 #ifndef INCLUDE_VNI_SAMPLE_H_
 #define INCLUDE_VNI_SAMPLE_H_
 
-#include <vni/Value.h>
 #include <vnl/Packet.h>
+#include <vni/Type.hxx>
 
 
 namespace vni {
@@ -34,7 +34,7 @@ protected:
 	}
 	
 	virtual void read(vnl::io::TypeInput& in) {
-		data = vni::read<vni::Value>(in);
+		data = vni::read(in);
 	}
 	
 	

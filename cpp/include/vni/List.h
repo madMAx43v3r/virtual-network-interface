@@ -15,53 +15,38 @@
 namespace vni {
 
 template<typename T>
-class List : public vni::ListBase<T>, public vnl::List<T*> {
+class List : public vni::ListBase<T>, public vnl::List<T> {
 public:
-	List() {}
 	
-	List(const List& other) {
-		*this = other;
+	List& operator=(const vnl::List<T>& other) {
+		clear();
+		append(other);
+		return *this;
 	}
 	
-	~List() {
-		clear();
-	}
-	
-	List& operator=(const List& other) {
-		clear();
+	virtual void to_string(vnl::String& str) const {
 		// TODO
-	}
-	
-	void clear() {
-		for(vnl::List<T*>::const_iterator iter = begin(); iter != end(); ++iter) {
-			T::destroy(*iter);
-		}
 	}
 	
 	virtual void serialize(vnl::io::TypeOutput& out) const {
 		Writer wr(out);
-		for(vnl::List<T*>::const_iterator iter = begin(); iter != end(); ++iter) {
-			out.putEntry(VNL_IO_CALL, 1);
-			out.putHash(call_push_back);
-			iter->serialize(out);
+		out.putEntry(VNL_IO_ARRAY, size());
+		for(const_iterator iter = begin(); iter != end() && !out.error(); ++iter) {
+			vni::write(out, *iter);
 		}
 	}
 	
-protected:
-	virtual bool vni_call(vnl::io::TypeInput& _in, uint32_t _hash, int _num_args) {
-		switch(_hash) {
-		case call_push_back:
-			T* obj = vni::read<T>(_in);
-			if(obj) {
-				push_back(obj);
+	virtual void deserialize(vnl::io::TypeInput& in, int size) {
+		int id = in.getEntry(size);
+		if(id == VNL_IO_ARRAY) {
+			for(int i = 0; i < size && !in.error(); ++i) {
+				vni::read(in, push_back(T()));
 			}
-			break;
+		} else {
+			in.skip(id, size);
 		}
-		return false;
+		in.skip(VNL_IO_INTERFACE, 0, VNI_HASH);
 	}
-	
-private:
-	static const uint32_t call_push_back = 0xbfe7101c;
 	
 };
 

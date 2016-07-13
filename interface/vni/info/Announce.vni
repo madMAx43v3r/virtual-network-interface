@@ -3,6 +3,6 @@ package vni.info;
 class Announce {
 	
 	String domain;
-	String name;
+	String topic;
 	
 }

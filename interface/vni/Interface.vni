@@ -1,7 +1,0 @@
-package vni;
-
-// Note: Interface is the base class for all interfaces.
-// Note: Interface inherits implicitly from Value.
-// Note: This file is just to show that it exists.
-
-// interface Interface {}

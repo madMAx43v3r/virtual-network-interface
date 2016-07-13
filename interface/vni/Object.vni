@@ -9,8 +9,8 @@ object Object {
 	
 	Class get_class() const;
 	
-	vni.Binary vni_serialize() const;
+	Binary vni_serialize() const;
 	
-	void vni_deserialize(vni.Binary blob);
+	void vni_deserialize(Binary blob);
 	
 }

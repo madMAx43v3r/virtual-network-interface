@@ -8,9 +8,9 @@
 #ifndef INCLUDE_VNI_OBJECT_H_
 #define INCLUDE_VNI_OBJECT_H_
 
-#include <vni/ObjectBase.h>
-#include <vni/Announce.h>
 #include <vnl/Module.h>
+#include <vni/ObjectBase.h>
+#include <vni/info/Announce.hxx>
 
 
 namespace vni {
@@ -32,11 +32,13 @@ public:
 protected:
 	virtual void run() {
 		Module::open(my_address);
-		// TODO: send announce
 		vni::Sample* pkt = buffer.create<vni::Sample>();
 		pkt->src_addr = my_address;
-		pkt->data = vni::Announce::create();
-		send_async(pkt, vnl::Address(my_address.A, "vni/Announce"));
+		vni::info::Announce* ann = vni::info::Announce::create();
+		ann->domain = my_domain;
+		ann->topic = my_topic;
+		pkt->data = ann;
+		send_async(pkt, vnl::Address(my_address.A, "vni/info/Announce"));
 		Module::run();
 		Module::close(my_address);
 	}
@@ -57,7 +59,7 @@ protected:
 			if(id == VNL_IO_INTERFACE) {
 				uint32_t hash = 0;
 				in.getHash(hash);
-				if(hash == vni_hash_) {
+				if(hash == vni_hash()) {
 					result->data = vnl::Page::alloc();
 					out_buf.wrap(result->data);
 					while(!in.error()) {
@@ -70,7 +72,7 @@ protected:
 							if(!res) {
 								in.skip(id, size, hash);
 							}
-							out.putBool(res);
+							out.putValue(res);
 						} else if(id == VNL_IO_CONST_CALL) {
 							in.getHash(hash);
 							if(!vni_const_call(in, hash, size, out)) {

@@ -2,7 +2,7 @@ package vni.info;
 
 class Process {
 	
-	int id;
+	int id = -1;
 	String name;
 	
 	List<Domain> domains;

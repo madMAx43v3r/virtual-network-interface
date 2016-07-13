@@ -17,7 +17,12 @@ namespace vni {
 class String : public StringBase, public vnl::String {
 public:
 	
+	virtual void to_string(vnl::String& str) const {
+		str << "\"" << str << "\"";
+	}
+	
 	virtual void serialize(vnl::io::TypeOutput& out) const {
+		Writer wr(out);
 		out.putString(*this);
 	}
 	

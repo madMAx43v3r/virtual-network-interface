@@ -8,7 +8,13 @@
 #ifndef INCLUDE_VNI_INTERFACE_H_
 #define INCLUDE_VNI_INTERFACE_H_
 
-#include <vni/Type.h>
+#include <vni/Value.hxx>
+
+
+#define VNI_INTERFACE(T) \
+	static T* create() { return vni::create<T >(); } \
+	virtual T* clone() const { return vni::create<T >(*this); } \
+	virtual void destroy() { vni::destroy<T >(this); }
 
 
 namespace vni {
@@ -48,8 +54,13 @@ public:
 	}
 	
 protected:
-	virtual bool vni_call(vnl::io::TypeInput& in, uint32_t hash, int num_args) = 0;
-	virtual bool vni_const_call(vnl::io::TypeInput& in, uint32_t hash, int num_args, vnl::io::TypeOutput& out) = 0;
+	virtual bool vni_call(vnl::io::TypeInput& in, uint32_t hash, int num_args) {
+		return false;
+	}
+	
+	virtual bool vni_const_call(vnl::io::TypeInput& in, uint32_t hash, int num_args, vnl::io::TypeOutput& out) {
+		return false;
+	}
 	
 };
 

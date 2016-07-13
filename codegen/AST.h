@@ -234,9 +234,7 @@ class Enum : public Type {
 public:
 	vector<string> values;
 	
-	Enum(string name) : Type(name) {
-		imports.insert("vni.Value");
-	}
+	Enum(string name) : Type(name) {}
 	
 };
 
@@ -274,7 +272,7 @@ public:
 	vector<Method*> all_methods;
 	
 	Interface(string name) : Class(name) {
-		imports.insert("vni.Interface");
+		imports.insert("vni.Value");
 	}
 	
 };
@@ -285,7 +283,7 @@ public:
 	vector<Interface*> implements;
 	
 	Object(string name) : Interface(name) {
-		imports.insert("vni.Object");
+		imports.insert("vni.Interface");
 	}
 	
 };
@@ -295,7 +293,7 @@ class Node : public Object {
 public:
 	
 	Node(string name) : Object(name) {
-		imports.insert("vni.Node");
+		imports.insert("vni.Object");
 	}
 	
 };

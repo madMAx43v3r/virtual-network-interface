@@ -24,18 +24,13 @@ public:
 	~Value() {
 	}
 	
-	static Value* create(vnl::Hash32 hash);
 	static Value* create() { return vni::create<vni::Value>(); }
-	
-	Value& operator=(const Value& other);
 	
 	virtual Value* clone() const { return vni::create<vni::Value>(*this); }
 	virtual void destroy() { vni::destroy<vni::Value>(this); }
 	
 	virtual uint32_t vni_hash() const { return VNI_HASH; }
 	virtual const char* type_name() const { return "vni.Value"; }
-	virtual bool is_base(vnl::Hash32 hash) const;
-	virtual bool is_instance(vnl::Hash32 hash) const;
 	
 	virtual int num_fields() const { return NUM_FIELDS; }
 	virtual int field_index(vnl::Hash32 hash) const;

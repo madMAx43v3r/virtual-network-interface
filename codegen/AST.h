@@ -77,6 +77,10 @@ public:
 	
 };
 
+std::ostream& error(Base* scope) {
+	return cerr << scope->file << ":" << scope->line << ": error: ";
+}
+
 
 class Package : public Base {
 public:
@@ -187,6 +191,7 @@ class Method : public Base {
 public:
 	Base* type = 0;
 	vector<Base*> tmpl_types;
+	
 	string name;
 	vector<Field*> params;
 	bool is_const = false;
@@ -203,7 +208,10 @@ public:
 		return str + ")";
 	}
 	virtual uint64_t get_hash() {
-		return hash64(name);
+		CRC64 hash;
+		hash.update(name);
+		hash.update(params.size());
+		return hash.getValue();
 	}
 };
 
@@ -219,6 +227,10 @@ public:
 		package = PACKAGE;
 		package->index[name] = this;
 		string full = package->name + "." + name;
+		if(INDEX.count(full)) {
+			error() << "duplicate type: " << full << endl;
+			FAIL();
+		}
 		INDEX[full] = this;
 		for(auto& entry : IMPORT) {
 			imports.insert(entry.second);
@@ -241,14 +253,11 @@ public:
 
 class Struct : public Type {
 public:
-	vector<Field*> fields;
 	vector<Field*> constants;
-	
+	vector<Field*> fields;
 	vector<Field*> all_fields;
 	
-	Struct(string name) : Type(name) {
-		imports.insert("vni.Value");
-	}
+	Struct(string name) : Type(name) {}
 	
 };
 
@@ -257,34 +266,34 @@ class Class : public Struct {
 public:
 	Class* super = 0;
 	
-	Class(string name) : Struct(name) {
-		imports.insert("vni.Value");
-	}
+	Class(string name) : Struct(name) {}
 	
 };
 
 
-class Interface : public Class {
+class Interface : public Type {
 public:
+	Interface* super = 0;
 	vector<string> generic;
-	vector<Method*> methods;
 	
+	vector<Method*> methods;
 	vector<Method*> all_methods;
 	
-	Interface(string name) : Class(name) {
-		imports.insert("vni.Value");
-	}
+	Interface(string name) : Type(name) {}
 	
 };
 
 
 class Object : public Interface {
 public:
+	Object* super = 0;
 	vector<Interface*> implements;
 	
-	Object(string name) : Interface(name) {
-		imports.insert("vni.Interface");
-	}
+	vector<Field*> constants;
+	vector<Field*> fields;
+	vector<Field*> all_fields;
+	
+	Object(string name) : Interface(name) {}
 	
 };
 
@@ -292,9 +301,7 @@ public:
 class Node : public Object {
 public:
 	
-	Node(string name) : Object(name) {
-		imports.insert("vni.Object");
-	}
+	Node(string name) : Object(name) {}
 	
 };
 

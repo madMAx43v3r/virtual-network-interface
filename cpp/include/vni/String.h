@@ -8,7 +8,7 @@
 #ifndef CPP_INCLUDE_VNI_STRING_H_
 #define CPP_INCLUDE_VNI_STRING_H_
 
-#include <vni/StringBase.h>
+#include <vni/StringBase.hxx>
 #include <vnl/String.h>
 
 
@@ -18,7 +18,8 @@ class String : public StringBase, public vnl::String {
 public:
 	
 	virtual void to_string(vnl::String& str) const {
-		str << "\"" << str << "\"";
+		// TODO: escape
+		str << "\"" << *this << "\"";
 	}
 	
 	virtual void serialize(vnl::io::TypeOutput& out) const {

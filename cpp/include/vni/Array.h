@@ -8,7 +8,7 @@
 #ifndef CPP_INCLUDE_VNI_ARRAY_H_
 #define CPP_INCLUDE_VNI_ARRAY_H_
 
-#include <vni/ArrayBase.h>
+#include <vni/ArrayBase.hxx>
 #include <vnl/Array.h>
 
 
@@ -17,6 +17,7 @@ namespace vni {
 template<typename T>
 class Array : public vni::ArrayBase<T>, public vnl::Array<T> {
 public:
+	virtual ~Array() {}
 	
 	Array& operator=(const vnl::Array<T>& other) {
 		clear();

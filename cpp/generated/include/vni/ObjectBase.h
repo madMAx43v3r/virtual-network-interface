@@ -8,8 +8,8 @@
 #ifndef CPP_GENERATED_VNI_OBJECTBASE_H_
 #define CPP_GENERATED_VNI_OBJECTBASE_H_
 
-#include <vni/Interface.h>
 #include <vni/Binary.h>
+#include "../../../include/vni/Interface.hxx"
 
 
 namespace vni {

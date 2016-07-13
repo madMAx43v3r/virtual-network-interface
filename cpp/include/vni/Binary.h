@@ -8,7 +8,7 @@
 #ifndef CPP_INCLUDE_VNI_BINARY_H_
 #define CPP_INCLUDE_VNI_BINARY_H_
 
-#include <vni/BinaryBase.h>
+#include <vni/BinaryBase.hxx>
 #include <vnl/Memory.h>
 
 
@@ -22,10 +22,6 @@ public:
 	Binary() {
 		data = 0;
 		size = 0;
-	}
-	
-	Binary(const Binary& other) : Binary() {
-		*this = other;
 	}
 	
 	~Binary() {
@@ -54,6 +50,10 @@ public:
 			data->free_all();
 		}
 		size = 0;
+	}
+	
+	virtual void to_string(vnl::String& str) const {
+		str << "{VNI_NAME: \"" << VNI_NAME << "\", size: " << vnl::dec(size) << ", data: \"\"}";
 	}
 	
 	virtual void serialize(vnl::io::TypeOutput& out) const {

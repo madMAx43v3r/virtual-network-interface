@@ -8,9 +8,18 @@
 #ifndef INCLUDE_VNI_TYPE_HXX_
 #define INCLUDE_VNI_TYPE_HXX_
 
-
+#include <vnl/Vector.h>
 #include <vni/Type.h>
 #include <vni/Value.hxx>
+#include <vni/Array.hxx>
+#include <vni/List.hxx>
+#include <vni/Bool.hxx>
+#include <vni/Integer.hxx>
+#include <vni/Real.hxx>
+#include <vni/String.hxx>
+#include <vni/Value.hxx>
+#include <vni/Interface.hxx>
+
 
 namespace vni {
 
@@ -56,7 +65,20 @@ inline void read(vnl::io::TypeInput& in, Value& obj) {
 		case VNL_IO_STRUCT:
 			obj.deserialize(in, size);
 			break;
-		case VNL_IO_CLASS:
+		case VNL_IO_CLASS: {
+			uint32_t hash = 0;
+			in.getHash(hash);
+			obj.deserialize(in, size);
+			break;
+		}
+		default: in.skip(id, size);
+	}
+}
+
+inline void read(vnl::io::TypeInput& in, Interface& obj) {
+	int size = 0;
+	int id = in.getEntry(size);
+	switch(id) {
 		case VNL_IO_INTERFACE: {
 			uint32_t hash = 0;
 			in.getHash(hash);
@@ -94,6 +116,10 @@ inline void write(vnl::io::TypeOutput& out, const Value& obj) {
 	obj.serialize(out);
 }
 
+inline void write(vnl::io::TypeOutput& out, const Interface& obj) {
+	obj.serialize(out);
+}
+
 inline void write(vnl::io::TypeOutput& out, const bool& val) { out.putValue(val); }
 inline void write(vnl::io::TypeOutput& out, const int8_t& val) { out.putValue(val); }
 inline void write(vnl::io::TypeOutput& out, const int16_t& val) { out.putValue(val); }
@@ -121,13 +147,17 @@ inline void to_string(vnl::String& str, const Value& obj) {
 	return obj.to_string(str);
 }
 
+inline void to_string(vnl::String& str, const Interface& obj) {
+	return obj.to_string(str);
+}
+
 inline void to_string(vnl::String& str, const bool& val) { str << (val ? "true" : "false"); }
 inline void to_string(vnl::String& str, const int8_t& val) { str << vnl::dec(val); }
 inline void to_string(vnl::String& str, const int16_t& val) { str << vnl::dec(val); }
 inline void to_string(vnl::String& str, const int32_t& val) { str << vnl::dec(val); }
 inline void to_string(vnl::String& str, const int64_t& val) { str << vnl::dec(val); }
-inline void to_string(vnl::String& str, const float& val) { str << vnl::def(val); }
-inline void to_string(vnl::String& str, const double& val) { str << vnl::def(val); }
+inline void to_string(vnl::String& str, const float& val) { str << vnl::def(val, 6); }
+inline void to_string(vnl::String& str, const double& val) { str << vnl::def(val, 12); }
 
 template<typename T, int N>
 void to_string(vnl::String& str, const vnl::Vector<T, N>& vec) {

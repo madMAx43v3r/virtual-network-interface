@@ -8,8 +8,7 @@
 #ifndef CPP_GENERATED_TEST_TESTNODEBASE_H_
 #define CPP_GENERATED_TEST_TESTNODEBASE_H_
 
-#include <vni/Value.h>
-#include <vni/Object.h>
+#include <vni/Object.hxx>
 #include <test/TestType.h>
 
 
@@ -23,9 +22,8 @@ public:
 	static const uint32_t HASH = 0x12332453;
 	
 	TestNodeBase(const vnl::String& domain, const vnl::String& name)
-		:	vni::Object(domain, name)
+		:	Object(domain, name)
 	{
-		vni_hash_ = HASH;
 		level = -1;
 		instance = "blubb";
 	}
@@ -33,32 +31,6 @@ public:
 	virtual const char* vni_type_name() const {
 		return "test.TestNode";
 	}
-	
-	class Client : public Object::Client {
-	public:
-		int test_func(const test::TestValue* val, test::TestValue*& _result) {
-			_buf.wrap(_data);
-			Writer _wr(_out);
-			_wr.test_func(val);
-			vnl::Packet* _pkt = _call();
-			if(_pkt) {
-				_result = vni::read<test::TestValue>(_in);
-				_pkt->ack();
-			}
-			return _error;
-		}
-		int test_func2(const test::value_t& val, test::value_t& _result) {
-			_buf.wrap(_data);
-			Writer _wr(_out);
-			_wr.test_func2(val);
-			vnl::Packet* _pkt = _call();
-			if(_pkt) {
-				vni::read(_in, _result);
-				_pkt->ack();
-			}
-			return _error;
-		}
-	};
 	
 	virtual void serialize(vnl::io::TypeOutput& _out) const {
 		Writer _wr(_out);
@@ -70,13 +42,6 @@ public:
 		vni::write(_out, instance);
 	}
 	
-protected:
-	virtual void handle(test::TestType* ev, vnl::Address src_addr, vnl::Address dst_addr) = 0;
-	
-	virtual test::TestValue* test_func(test::TestValue*& val) const = 0;
-	virtual test::value_t test_func2(test::value_t& val) const = 0;
-	
-protected:
 	class Writer {
 	public:
 		Writer(vnl::io::TypeOutput& out) : _out(out) {
@@ -100,6 +65,13 @@ protected:
 		vnl::io::TypeOutput& _out;
 	};
 	
+protected:
+	virtual void handle(test::TestType* ev, vnl::Address src_addr, vnl::Address dst_addr) = 0;
+	
+	virtual test::TestValue* test_func(test::TestValue*& val) const = 0;
+	virtual test::value_t test_func2(test::value_t& val) const = 0;
+	
+protected:
 	virtual bool vni_call(vnl::io::TypeInput& in, uint32_t hash, int num_args) {
 		switch(hash) {
 		case 0x8356785: if(num_args == 1) { in.getValue(level); } break;
@@ -141,6 +113,33 @@ protected:
 		return false;
 	}
 	
+};
+
+
+class TestNodeClient : public vni::Object::Client {
+public:
+	int test_func(const test::TestValue* val, test::TestValue*& _result) {
+		_buf.wrap(_data);
+		Writer _wr(_out);
+		_wr.test_func(val);
+		vnl::Packet* _pkt = _call();
+		if(_pkt) {
+			_result = vni::read<test::TestValue>(_in);
+			_pkt->ack();
+		}
+		return _error;
+	}
+	int test_func2(const test::value_t& val, test::value_t& _result) {
+		_buf.wrap(_data);
+		Writer _wr(_out);
+		_wr.test_func2(val);
+		vnl::Packet* _pkt = _call();
+		if(_pkt) {
+			vni::read(_in, _result);
+			_pkt->ack();
+		}
+		return _error;
+	}
 };
 
 

@@ -9,7 +9,6 @@
 #define CPP_VNI_TYPE_H_
 
 #include <vnl/io.h>
-#include <vnl/Vector.h>
 
 
 namespace vni {
@@ -22,6 +21,7 @@ public:
 	
 	virtual uint32_t vni_hash() const = 0;
 	virtual const char* type_name() const = 0;
+	
 	virtual int num_fields() const = 0;
 	virtual int field_index(vnl::Hash32 hash) const = 0;
 	virtual const char* field_name(int index) const = 0;
@@ -33,14 +33,11 @@ public:
 	}
 	
 	virtual void to_string(vnl::String& str) const {
-		str << "{";
+		str << "{VNI_NAME: \"" << type_name() << "\"";
 		int N = num_fields();
 		for(int i = 0; i < N; ++i) {
-			str << field_name(i) << ": ";
+			str << ", " << field_name(i) << ": ";
 			get_field(i, str);
-			if(i < N-1) {
-				str << ", ";
-			}
 		}
 		str << "}";
 	}

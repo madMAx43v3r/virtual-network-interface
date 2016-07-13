@@ -95,6 +95,13 @@ protected:
 		return false;
 	}
 	
+	virtual vni::info::Class get_class() const {
+		vni::info::Class res;
+		res.name = VNI_NAME;
+		// TODO
+		return res;
+	}
+	
 	virtual Binary vni_serialize() const {
 		Binary blob;
 		blob.data = vnl::Page::alloc();

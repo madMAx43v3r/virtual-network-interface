@@ -48,7 +48,6 @@ public:
 		for(string root : root_dirs) {
 			parse_dir(root);
 		}
-		check();
 		postprocess();
 	}
 	
@@ -85,18 +84,90 @@ public:
 		
 	}
 	
-	virtual void check() {
-		// TODO
+	virtual void postprocess() {
+		for(auto entry : INDEX) {
+			Struct* p_struct = dynamic_cast<Struct*>(entry.second);
+			Class* p_class = dynamic_cast<Class*>(entry.second);
+			if(p_struct) {
+				p_struct->all_fields = p_struct->fields;
+			}
+			if(p_class) {
+				Class* super = p_class->super;
+				while(super) {
+					p_class->all_fields.insert(p_class->all_fields.end(), super->fields.begin(), super->fields.end());
+					super = super->super;
+				}
+			}
+			if(p_struct) {
+				check_dup_fields(p_struct->fields);
+			}
+			
+			Interface* p_iface = dynamic_cast<Interface*>(entry.second);
+			if(p_iface) {
+				p_iface->all_methods = p_iface->methods;
+				Interface* super = p_iface->super;
+				while(super) {
+					p_iface->all_methods.insert(p_iface->all_methods.end(), super->methods.begin(), super->methods.end());
+					super = super->super;
+				}
+				p_iface->all_methods = get_unique_methods(p_iface->all_methods);
+			}
+			
+			Object* p_object = dynamic_cast<Object*>(entry.second);
+			if(p_object) {
+				Object* super = p_object->super;
+				while(super) {
+					p_object->all_fields.insert(p_object->all_fields.end(), super->fields.begin(), super->fields.end());
+					p_object->all_methods.insert(p_object->all_methods.end(), super->methods.begin(), super->methods.end());
+					for(Interface* iface : super->implements) {
+						p_object->all_methods.insert(p_object->all_methods.end(), iface->methods.begin(), iface->methods.end());
+					}
+					super = super->super;
+				}
+				for(Interface* iface : p_object->implements) {
+					p_object->all_methods.insert(p_object->all_methods.end(), iface->methods.begin(), iface->methods.end());
+				}
+				check_dup_fields(p_object->fields);
+				p_iface->all_methods = get_unique_methods(p_iface->all_methods);
+			}
+		}
 	}
 	
-	virtual void postprocess() {
-		
+	void check_dup_fields(vector<Field*>& fields) {
+		map<uint64_t, Field*> map;
+		for(Field* field : fields) {
+			uint64_t hash = field->get_hash();
+			if(map.count(hash)) {
+				error(field) << "duplicate field: " << field->name << endl;
+				FAIL();
+			}
+			map[hash] = field;
+		}
+	}
+	
+	vector<Method*> get_unique_methods(vector<Method*>& methods) {
+		map<uint64_t, Method*> map;
+		for(Method* method : methods) {
+			uint64_t hash = method->get_hash();
+			map[hash] = method;
+		}
+		vector<Method*> res;
+		for(auto& entry : map) {
+			res.push_back(entry.second);
+		}
+		return res;
 	}
 	
 protected:
 	int curr_pass = 1;
 	
 };
+
+
+
+
+
+
 
 
 }}

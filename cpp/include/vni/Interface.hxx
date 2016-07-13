@@ -8,7 +8,7 @@
 #ifndef INCLUDE_VNI_INTERFACE_H_
 #define INCLUDE_VNI_INTERFACE_H_
 
-#include <vni/Value.hxx>
+#include <vni/Type.hxx>
 
 
 #define VNI_INTERFACE(T) \
@@ -19,9 +19,9 @@
 
 namespace vni {
 
-class Interface : public Value {
+class Interface : public Type {
 public:
-	static const int NOT_IMPLEMENTED = 0;
+	virtual ~Interface() {}
 	
 	virtual void deserialize(vnl::io::TypeInput& in, int size) {
 		int stack = 1;
@@ -51,6 +51,26 @@ public:
 				in.skip(id, size);
 			}
 		}
+	}
+	
+	virtual int num_fields() const {
+		return 0;
+	}
+	
+	virtual int field_index(vnl::Hash32 hash_) const {
+		return -1;
+	}
+	
+	virtual const char* field_name(int index_) const {
+		return "?";
+	}
+	
+	virtual void get_field(int index_, vnl::String& str_) const {
+		// default: nothing
+	}
+	
+	virtual void set_field(int index_, const vnl::String& str_) {
+		// default: nothing
 	}
 	
 protected:

@@ -17,6 +17,7 @@ namespace vni {
 template<typename T>
 class List : public vni::ListBase<T>, public vnl::List<T> {
 public:
+	virtual ~List() {}
 	
 	List& operator=(const vnl::List<T>& other) {
 		clear();

@@ -106,7 +106,7 @@ public:
 				p_interface = p_object;
 			}
 			if(p_interface) {
-				p_class = p_interface;
+				p_base = p_interface;
 			}
 			if(p_class) {
 				p_struct = p_class;
@@ -133,12 +133,20 @@ public:
 				}
 			}
 			if(token == "extends") {
-				if(!p_class) {
-					ERROR("only class can inherit");
+				if(!p_class && !p_interface) {
+					ERROR("only class and interface can extend");
 				}
 				string super = read_token();
 				cout << "  EXTENDS " << super << endl;
-				p_class->super = resolve<Class>(super);
+				if(p_node) {
+					p_node->super = resolve<Node>(super);
+				} else if(p_object) {
+					p_object->super = resolve<Object>(super);
+				} else if(p_interface) {
+					p_interface->super = resolve<Interface>(super);
+				} else if(p_class) {
+					p_class->super = resolve<Class>(super);
+				}
 				read_token();
 			}
 			if(token == "implements") {
@@ -177,26 +185,38 @@ public:
 				Field* field = 0;
 				Method* method = 0;
 				if(token == ";") {
-					if(!p_struct) {
-						ERROR("cannot have fields here");
-					}
 					field = new Field();
 					field->type = resolve(type);
-					p_struct->fields.push_back(field);
-					cout << "    FIELD " << type << " " << name << endl;
-				} else if(token == "=") {
-					if(!p_struct) {
+					if(p_struct) {
+						p_struct->fields.push_back(field);
+					} else if(p_object) {
+						p_object->fields.push_back(field);
+					} else {
 						ERROR("cannot have fields here");
 					}
+					cout << "    FIELD " << type << " " << name << endl;
+				} else if(token == "=") {
 					string value = read_token();
 					field = new Field();
 					field->type = resolve(type);
 					field->value = value;
 					if(is_const) {
-						p_struct->constants.push_back(field);
+						if(p_struct) {
+							p_struct->constants.push_back(field);
+						} else if(p_object) {
+							p_object->constants.push_back(field);
+						} else {
+							ERROR("cannot have fields here");
+						}
 						cout << "    CONST " << type << " " << name << " = " << value << endl;
 					} else {
-						p_struct->fields.push_back(field);
+						if(p_struct) {
+							p_struct->fields.push_back(field);
+						} else if(p_object) {
+							p_object->fields.push_back(field);
+						} else {
+							ERROR("cannot have fields here");
+						}
 						cout << "    FIELD " << type << " " << name << " = " << value << endl;
 					}
 					if(read_token() != ";") {
@@ -213,7 +233,13 @@ public:
 					array->type = resolve(type);
 					array->size = size;
 					field->type = array;
-					p_struct->fields.push_back(field);
+					if(p_struct) {
+						p_struct->fields.push_back(field);
+					} else if(p_object) {
+						p_object->fields.push_back(field);
+					} else {
+						ERROR("cannot have fields here");
+					}
 					if(read_token() != "]") {
 						ERROR("expected ] after [");
 					}
@@ -258,6 +284,11 @@ public:
 						ERROR("expected ; or const");
 					}
 					cout << endl;
+					if(p_interface) {
+						p_interface->methods.push_back(method);
+					} else {
+						ERROR("cannot have methods here");
+					}
 				}
 				
 				if(field) {

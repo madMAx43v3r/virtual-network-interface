@@ -1,8 +1,0 @@
-package vni;
-
-// A Node can also receive multicast samples.
-// Like: void handle(Value sample);
-
-node Node {
-	
-}

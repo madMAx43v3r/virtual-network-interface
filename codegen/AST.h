@@ -18,9 +18,9 @@
 
 #include "CRC64.h"
 
-#define FAIL() assert(false);
+#define FAIL() { cout << endl; assert(false); }
 
-#define ERROR(msg) error() << #msg << endl; assert(false); exit(-1);
+#define ERROR(msg) { error() << #msg << endl << endl; assert(false); exit(-1); }
 
 using namespace std;
 
@@ -73,7 +73,7 @@ public:
 		return hash64(get_full_name());
 	}
 	
-	virtual bool check() { return true; }
+	virtual void compile() {}
 	
 };
 
@@ -133,7 +133,6 @@ public:
 	
 	virtual string get_name() { return name; }
 	virtual string get_full_name() { return name; }
-	virtual uint64_t get_hash() { return hash64("vni.ast.integer"); }
 };
 
 class Real : public Primitive {
@@ -145,7 +144,6 @@ public:
 	
 	virtual string get_name() { return name; }
 	virtual string get_full_name() { return name; }
-	virtual uint64_t get_hash() { return hash64("vni.ast.real"); }
 };
 
 
@@ -164,49 +162,38 @@ public:
 		ss << type->get_full_name() << "[" << size << "]";
 		return ss.str();
 	}
-	virtual uint64_t get_hash() {
-		CRC64 hash;
-		hash.update("vni.ast.array");
-		hash.update(type->get_hash());
-		return hash.getValue();
-	}
 };
 
 
-class Field : public Base {
+class TypeName : public Base {
 public:
 	Base* type = 0;
-	vector<Base*> tmpl_types;
+	vector<Base*> tmpl;
+	
+};
+
+
+class Field : public TypeName {
+public:
 	string name;
 	string value;
 	bool is_const = false;
 	
 	virtual string get_name() { return name; }
-	virtual string get_full_name() { return type->get_full_name() + " " + name; }
+	virtual string get_full_name() { return name; }
 	virtual uint64_t get_hash() { return hash64(name); }
 };
 
 
-class Method : public Base {
+class Method : public TypeName {
 public:
-	Base* type = 0;
-	vector<Base*> tmpl_types;
-	
 	string name;
 	vector<Field*> params;
 	bool is_const = false;
+	bool is_handle = false;
 	
 	virtual string get_name() { return name; }
-	virtual string get_full_name() {
-		string str = type->get_name() + " " + name + "(";
-		for(int i = 0; i < params.size(); ++i) {
-			str += params[i]->type->get_full_name();
-			if(i < params.size()-1) {
-				str += ", ";
-			}
-		}
-		return str + ")";
-	}
+	virtual string get_full_name() { return name; }
 	virtual uint64_t get_hash() {
 		CRC64 hash;
 		hash.update(name);
@@ -237,6 +224,8 @@ public:
 		}
 	}
 	
+	void import(TypeName* import);
+	
 	virtual string get_name() { return name; }
 	virtual string get_full_name() { return package->get_full_name() + "." + get_name(); }
 };
@@ -259,6 +248,8 @@ public:
 	
 	Struct(string name) : Type(name) {}
 	
+	virtual void compile();
+	
 };
 
 
@@ -267,6 +258,8 @@ public:
 	Class* super = 0;
 	
 	Class(string name) : Struct(name) {}
+	
+	virtual void compile();
 	
 };
 
@@ -280,6 +273,8 @@ public:
 	vector<Method*> all_methods;
 	
 	Interface(string name) : Type(name) {}
+	
+	virtual void compile();
 	
 };
 
@@ -295,13 +290,15 @@ public:
 	
 	Object(string name) : Interface(name) {}
 	
+	virtual void compile();
+	
 };
 
 
-class Node : public Object {
+class Module : public Object {
 public:
 	
-	Node(string name) : Object(name) {}
+	Module(string name) : Object(name) {}
 	
 };
 
@@ -328,6 +325,124 @@ static T* resolve(const string& ident) {
 
 static Base* resolve(const string& ident) {
 	return resolve<Base>(ident);
+}
+
+
+void check_dup_fields(vector<Field*>& fields) {
+	map<uint64_t, Field*> map;
+	for(Field* field : fields) {
+		uint64_t hash = field->get_hash();
+		if(map.count(hash)) {
+			error(field) << "duplicate field: " << field->name << endl;
+			FAIL();
+		}
+		map[hash] = field;
+	}
+}
+
+vector<Method*> get_unique_methods(vector<Method*>& methods) {
+	map<uint64_t, Method*> map;
+	for(Method* method : methods) {
+		uint64_t hash = method->get_hash();
+		map[hash] = method;
+	}
+	vector<Method*> res;
+	for(auto& entry : map) {
+		res.push_back(entry.second);
+	}
+	return res;
+}
+
+
+void Type::import(TypeName* import) {
+	Type* p_type = dynamic_cast<Type*>(import->type);
+	Interface* p_iface = dynamic_cast<Interface*>(import->type);
+	if(p_type) {
+		imports.insert(p_type->package->name + "." + p_type->name);
+		for(Base* param : import->tmpl) {
+			
+		}
+	}
+	if(import->tmpl.size() && (!p_iface || p_iface->generic.empty())) {
+		error(import) << "is not a template" << endl;
+		FAIL();
+	}
+}
+
+void Struct::compile() {
+	Type::compile();
+	for(Field* field : fields) {
+		import(field);
+	}
+	check_dup_fields(fields);
+	all_fields = fields;
+}
+
+void Class::compile() {
+	Struct::compile();
+	Class* next = super;
+	while(next) {
+		all_fields.insert(all_fields.end(), next->fields.begin(), next->fields.end());
+		next = next->super;
+	}
+}
+
+void Interface::compile() {
+	Type::compile();
+	for(Method* method : methods) {
+		import(method);
+		for(Field* param : method->params) {
+			import(param);
+		}
+		if(method->is_const && method->type->get_name() == "void") {
+			error(method) << "const method cannot return void" << endl;
+			FAIL();
+		}
+		if(!method->is_const && method->type->get_name() != "void") {
+			error(method) << "non-const method must return void" << endl;
+			FAIL();
+		}
+		if(method->name == "handle") {
+			if(method->params.size() != 1) {
+				error(method) << "handle() method must have one parameter" << endl;
+				FAIL();
+			}
+			if(method->is_const) {
+				error(method) << "handle() method cannot be const" << endl;
+				FAIL();
+			}
+			method->is_handle = true;
+		}
+	}
+	all_methods = methods;
+	Interface* next = super;
+	while(next) {
+		all_methods.insert(all_methods.end(), next->methods.begin(), next->methods.end());
+		next = next->super;
+	}
+	all_methods = get_unique_methods(all_methods);
+}
+
+void Object::compile() {
+	Interface::compile();
+	for(Field* field : fields) {
+		import(field);
+	}
+	check_dup_fields(fields);
+	all_fields = fields;
+	Object* next = super;
+	while(next) {
+		all_fields.insert(all_fields.end(), next->fields.begin(), next->fields.end());
+		all_methods.insert(all_methods.end(), next->methods.begin(), next->methods.end());
+		for(Interface* iface : next->implements) {
+			all_methods.insert(all_methods.end(), iface->methods.begin(), iface->methods.end());
+		}
+		next = next->super;
+	}
+	for(Interface* iface : implements) {
+		all_methods.insert(all_methods.end(), iface->methods.begin(), iface->methods.end());
+	}
+	all_methods = get_unique_methods(all_methods);
 }
 
 

@@ -72,8 +72,8 @@ protected:
 protected:
 	virtual bool vni_call(vnl::io::TypeInput& in, uint32_t hash, int num_args) {
 		switch(hash) {
-		case 0x8356785: if(num_args == 1) { in.getValue(level); } break;
-		case 0x8357475: if(num_args == 1) { vni::read(in, instance); } break;
+		case 0x8356785: if(num_args == 1) { in.getValue(level); return true; } break;
+		case 0x8357475: if(num_args == 1) { vni::read(in, instance); return true; } break;
 		}
 		return false;
 	}
@@ -88,7 +88,7 @@ protected:
 				test::TestValue::write(out, _result);
 				test::TestValue::destroy(_result);
 				test::TestValue::destroy(val);
-				break;
+				return true;
 			}
 			break;
 		case 0x2354924:
@@ -97,14 +97,14 @@ protected:
 				test::value_t val; test::value_t::read(in, &val);
 				test::value_t _result = test_func2(val);
 				test::value_t::write(out, &_result);
-				break;
+				return true;
 			}
 			break;
 		}
 		return false;
 	}
 	
-	virtual bool handle(vni::Value* sample, vnl::Address src_addr, vnl::Address dst_addr) {
+	virtual bool handle_switch(vni::Value* sample, vnl::Address src_addr, vnl::Address dst_addr) {
 		switch(sample->vni_hash_) {
 		case test::TestType::VNI_HASH: handle(sample, src_addr, dst_addr); return true;
 		}

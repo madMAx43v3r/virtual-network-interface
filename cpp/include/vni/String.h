@@ -23,7 +23,7 @@ public:
 	}
 	
 	virtual void serialize(vnl::io::TypeOutput& out) const {
-		Writer wr(out, this);
+		Writer wr(out);
 		out.putString(*this);
 	}
 	

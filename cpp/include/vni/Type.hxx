@@ -10,6 +10,7 @@
 
 #include <vnl/Vector.h>
 #include <vni/Type.h>
+
 #include <vni/Value.hxx>
 #include <vni/Array.hxx>
 #include <vni/List.hxx>

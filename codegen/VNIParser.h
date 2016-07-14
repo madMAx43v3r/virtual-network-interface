@@ -54,9 +54,9 @@ public:
 			} else if(keyword == "object") {
 				base = new Object(name);
 				cout << "  OBJECT " << name << endl;
-			} else if(keyword == "node") {
-				base = new Node(name);
-				cout << "  NODE " << name << endl;
+			} else if(keyword == "module") {
+				base = new Module(name);
+				cout << "  MODULE " << name << endl;
 			} else {
 				ERROR("expected type definition");
 			}
@@ -79,7 +79,7 @@ public:
 			Class* p_class = 0;
 			Interface* p_interface = 0;
 			Object* p_object = 0;
-			Node* p_node = 0;
+			Module* p_module = 0;
 			if(keyword == "enum") {
 				p_enum = resolve<Enum>(full_name);
 				cout << "  ENUM " << name << endl;
@@ -95,12 +95,12 @@ public:
 			} else if(keyword == "object") {
 				p_object = resolve<Object>(full_name);
 				cout << "  OBJECT " << name << endl;
-			} else if(keyword == "node") {
-				p_node = resolve<Node>(full_name);
-				cout << "  NODE " << name << endl;
+			} else if(keyword == "module") {
+				p_module = resolve<Module>(full_name);
+				cout << "  MODULE " << name << endl;
 			}
-			if(p_node) {
-				p_object = p_node;
+			if(p_module) {
+				p_object = p_module;
 			}
 			if(p_object) {
 				p_interface = p_object;
@@ -138,8 +138,8 @@ public:
 				}
 				string super = read_token();
 				cout << "  EXTENDS " << super << endl;
-				if(p_node) {
-					p_node->super = resolve<Node>(super);
+				if(p_module) {
+					p_module->super = resolve<Module>(super);
 				} else if(p_object) {
 					p_object->super = resolve<Object>(super);
 				} else if(p_interface) {
@@ -251,7 +251,7 @@ public:
 					method = new Method();
 					method->name = name;
 					method->type = resolve(type);
-					method->tmpl_types = tmpl_params;
+					method->tmpl = tmpl_params;
 					read_token();
 					cout << "    METHOD " << type << " " << name;
 					while(token != ")" && !end_of_file) {
@@ -259,7 +259,7 @@ public:
 						string name_ = read_token();
 						Field* param = new Field();
 						param->type = resolve(type_);
-						param->tmpl_types = tmpl_params;
+						param->tmpl = tmpl_params;
 						param->name = name_;
 						method->params.push_back(param);
 						cout << " [" << type_ << " " << name_ << "]";
@@ -292,7 +292,7 @@ public:
 				}
 				
 				if(field) {
-					field->tmpl_types = tmpl_params;
+					field->tmpl = tmpl_params;
 					field->name = name;
 					field->is_const = is_const;
 				}

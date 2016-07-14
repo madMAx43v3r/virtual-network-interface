@@ -16,10 +16,9 @@ namespace vni {
 
 class ObjectBase : public vni::Interface {
 public:
-	static const uint32_t HASH = 0x16238449;
+	static const uint32_t VNI_HASH = 0x16238449;
 	
 	ObjectBase() {
-		vni_hash_ = HASH;
 	}
 	
 	virtual const char* vni_type_name() const {
@@ -35,7 +34,7 @@ protected:
 	public:
 		Writer(vnl::io::TypeOutput& out) : _out(out) {
 			_out.putEntry(VNL_IO_INTERFACE, VNL_IO_BEGIN);
-			_out.putHash(HASH);
+			_out.putHash(VNI_HASH);
 		}
 		~Writer() {
 			_out.putEntry(VNL_IO_INTERFACE, VNL_IO_END);
@@ -64,16 +63,6 @@ protected:
 	
 };
 
-
-class ObjectClient : public vni::Client {
-public:
-	int vni_serialize(vni::Binary& _result) {
-		
-	}
-	int vni_deserialize(const vni::Binary& blob) {
-		
-	}
-};
 
 
 

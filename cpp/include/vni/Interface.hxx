@@ -8,13 +8,7 @@
 #ifndef INCLUDE_VNI_INTERFACE_H_
 #define INCLUDE_VNI_INTERFACE_H_
 
-#include <vni/Type.hxx>
-
-
-#define VNI_INTERFACE(T) \
-	static T* create() { return vni::create<T >(); } \
-	virtual T* clone() const { return vni::create<T >(*this); } \
-	virtual void destroy() { vni::destroy<T >(this); }
+#include <vni/Type.h>
 
 
 namespace vni {

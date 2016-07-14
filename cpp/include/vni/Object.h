@@ -125,7 +125,7 @@ protected:
 		return blob;
 	}
 	
-	virtual void vni_deserialize(vni::Binary& blob) {
+	virtual void vni_deserialize(const vni::Binary& blob) {
 		vnl::io::ByteBuffer buf;
 		vnl::io::TypeInput in(&buf);
 		buf.wrap(blob.data, blob.size);

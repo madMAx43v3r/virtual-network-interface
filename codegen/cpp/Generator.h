@@ -23,7 +23,7 @@
 	Class* p_class = dynamic_cast<Class*>(source); \
 	Interface* p_iface = dynamic_cast<Interface*>(source); \
 	Object* p_object = dynamic_cast<Object*>(source); \
-	Node* p_node = dynamic_cast<Node*>(source);
+	Module* p_module = dynamic_cast<Module*>(source);
 
 
 namespace vni {
@@ -34,6 +34,7 @@ class Generator : public Backend {
 public:
 	virtual void generate(Type* type) {
 		Interface* p_iface = dynamic_cast<Interface*>(type);
+		Object* p_object = dynamic_cast<Object*>(type);
 		
 		// generate header
 		out.str("");
@@ -53,6 +54,13 @@ public:
 			source_name += ".cxx";
 		}
 		update(source_dir, source_name, out.str());
+		
+		// generate client
+		if(p_object) {
+			out.str("");
+			generate_client(p_object);
+			update(header_dir, type->name + "Client.hxx", out.str());
+		}
 	}
 	
 	static string full(string name) {
@@ -63,40 +71,59 @@ public:
 		return subs(type->get_full_name(), ".", "::");
 	}
 	
-	static string hash_of(Base* type) {
-		char buf[64];
-		int len = snprintf(buf, 64, "0x%x", (uint32_t)type->get_hash());
-		return string(buf, len);
+	static string hash32_of(Base* type) {
+		return hash32_to_str(type->get_hash());
 	}
 	
-	static string hash_of(string str) {
+	static string hash32_of(string str) {
+		return hash32_to_str(hash64(str));
+	}
+	
+	static string hash32_to_str(uint32_t hash) {
 		char buf[64];
-		int len = snprintf(buf, 64, "0x%x", (uint32_t)hash64(str));
+		int len = snprintf(buf, 64, "0x%x", hash);
 		return string(buf, len);
 	}
 	
 	void namespace_begin() {
+		out << endl;
 		for(string space : name_space) {
 			out << "namespace " << space << " {" << endl;
 		}
+		out << endl;
 	}
 	
 	void namespace_end() {
+		out << endl;
 		for(string space : name_space) {
 			out << "} // namespace" << endl;
 		}
+		out << endl;
 	}
 	
 	void echo_type(Base* type) {
 		TYPE_TREE(type);
-		if(p_object) {
+		TypeName* p_typename = dynamic_cast<TypeName*>(type);
+		if(p_typename) {
+			echo_type(p_typename->type);
+			if(p_typename->tmpl.size()) {
+				out << "<";
+				for(int i = 0; i < p_typename->tmpl.size(); ++i) {
+					out << full(p_typename->tmpl[i]);
+					if(i < p_typename->tmpl.size()-1) {
+						out << ", ";
+					}
+				}
+				out << " >";
+			}
+		} else if(p_object) {
 			out << full(type) << "Base::Client";
 		} else if(p_iface) {
 			out << full(type);
 		} else if(p_struct) {
 			out << full(type);
 		} else if(p_enum) {
-			out << "uint32_t";
+			out << "int32_t";
 		} else if(p_array) {
 			out << "vnl::Vector<";
 			echo_type(p_array->type);
@@ -122,24 +149,21 @@ public:
 		}
 	}
 	
-	void echo_tmpl(vector<Base*>& params) {
-		if(params.size()) {
-			out << "<";
-			for(int i = 0; i < params.size(); ++i) {
-				out << full(params[i]);
-				if(i < params.size()-1) {
-					out << ", ";
-				}
-			}
-			out << " >";
+	void echo_ref_to(Field* field, bool add_const = true) {
+		TYPE_TREE(field->type);
+		if(!p_primitive && add_const) {
+			out << "const ";
+		}
+		echo_type(field);
+		if(!p_primitive) {
+			out << "&";
 		}
 	}
 	
 	void echo_field(Field* field, bool def, bool init) {
 		TYPE_TREE(field->type);
 		if(def) {
-			echo_type(field->type);
-			echo_tmpl(field->tmpl_types);
+			echo_type(field);
 			out << " ";
 		}
 		out << field->name;
@@ -151,6 +175,34 @@ public:
 			}
 		}
 		out << ";" << endl;
+	}
+	
+	void echo_method_params(Method* method, bool add_const = true) {
+		for(int i = 0; i < method->params.size(); ++i) {
+			Field* param = method->params[i];
+			echo_ref_to(param, add_const);
+			out << " " << param->name;
+			if(i < method->params.size()-1) {
+				out << ", ";
+			}
+		}
+	}
+	
+	void echo_method_args(Method* method) {
+		int i = 0;
+		for(Field* param : method->params) {
+			out << param->name;
+			if(i++ < method->params.size()-1) {
+				out << ", ";
+			}
+		}
+	}
+	
+	void echo_includes(Type* p_type) {
+		for(string import : p_type->imports) {
+			out << "#include <" << subs(import, ".", "/") << ".hxx>" << endl;
+		}
+		out << endl;
 	}
 	
 	void generate_header(Type* p_type) {
@@ -170,8 +222,8 @@ public:
 		is_base = false;
 		if(p_class && p_class->super) {
 			super = p_class->super->get_full_name();
-		} else if(p_node && p_type->name != "Node") {
-			super = "vni.Node";
+		} else if(p_module && p_type->name != "Module") {
+			super = "vni.Module";
 		} else if(p_object && p_type->name != "Object") {
 			super = "vni.Object";
 		} else if(p_iface && p_type->name != "Interface") {
@@ -185,14 +237,10 @@ public:
 			is_base = true;
 		}
 		p_type->imports.insert(super);
-		for(string import : p_type->imports) {
-			out << "#include <" << subs(import, ".", "/") << ".hxx>" << endl;
-		}
-		out << endl;
+		echo_includes(p_type);
 		
 		name_space = split(p_type->package->name, '.');
 		namespace_begin();
-		out << endl;
 		
 		if(p_iface) {
 			string template_str;
@@ -211,7 +259,7 @@ public:
 		if(p_struct || p_iface) {
 			out << "class " << base_name << " : public " << subs(super, ".", "::") << " {" << endl;
 			out << "public:@" << endl;
-			out << "static const uint32_t VNI_HASH = " << hash_of(p_type) << ";" << endl;
+			out << "static const uint32_t VNI_HASH = " << hash32_of(p_type) << ";" << endl;
 			out << "static const char* VNI_NAME = \"" << p_type->get_full_name() << "\";" << endl;
 			if(p_struct) {
 				out << "static const uint32_t NUM_FIELDS = " << p_struct->all_fields.size() << ";" << endl;
@@ -229,7 +277,7 @@ public:
 			}
 			for(Field* field : constants) {
 				out << "static const ";
-				echo_type(field->type);
+				echo_type(field);
 				out << " " << field->name << " = " << field->value << ";" << endl;
 			}
 			out << endl;
@@ -241,8 +289,7 @@ public:
 				fields = p_object->fields;
 			}
 			for(Field* field : fields) {
-				echo_type(field->type);
-				echo_tmpl(field->tmpl_types);
+				echo_type(field);
 				out << " " << field->name << ";" << endl;
 			}
 			
@@ -289,52 +336,35 @@ public:
 			out << "$protected:@" << endl;
 			for(Method* method : p_iface->methods) {
 				out << "virtual ";
-				echo_type(method->type);
-				echo_tmpl(method->tmpl_types);
+				echo_type(method);
 				out << " " << method->name << "(";
-				for(int i = 0; i < method->params.size(); ++i) {
-					Field* param = method->params[i];
-					echo_type(param->type);
-					echo_tmpl(param->tmpl_types);
-					out << " " << param->name;
-					if(i < method->params.size()-1) {
-						out << ", ";
-					}
+				echo_method_params(method, true);
+				if(method->is_handle) {
+					out << ", vnl::Address src_addr, vnl::Address dst_addr";
 				}
-				out << ") " << (method->is_const ? "const " : "") << "= 0;" << endl;
+				out << ")" << (method->is_const ? " const" : "");
+				out << " = 0;" << endl;
 			}
 			out << endl;
 			out << "virtual bool vni_call(vnl::io::TypeInput& in_, uint32_t hash_, int num_args_);" << endl;
 			out << "virtual bool vni_const_call(vnl::io::TypeInput& in_, uint32_t hash_, int num_args_, vnl::io::TypeOutput& out_);" << endl;
+			if(p_module) {
+				out << "virtual bool handle_switch(vni::Value* sample_, vnl::Address src_addr, vnl::Address dst_addr);" << endl;
+			}
+			out << endl << "$public:@" << endl;
+			generate_writer(p_iface);
 		}
 		
 		if(p_enum) {
 			out << "struct " << type_name << " {@" << endl << endl;
 			for(string& value : p_enum->values) {
-				out << "static const uint32_t " << value << " = " << hash_of(value) << ";" << endl;
+				out << "static const uint32_t " << value << " = " << hash32_of(value) << ";" << endl;
 			}
 		}
 		
 		out << endl << "$};" << endl << endl;
-		
-		if(p_object) {
-			out << endl;
-			generate_client(p_object);
-			out << endl;
-		}
-		
 		namespace_end();
-		out << endl << "#endif // " << guard_sym;
-	}
-	
-	void generate_writer(Interface* p_iface) {
-		Object* p_object = dynamic_cast<Object*>(p_iface);
-		
-		
-	}
-	
-	void generate_client(Object* p_object) {
-		
+		out << "#endif // " << guard_sym;
 	}
 	
 	void generate_source(Type* p_type) {
@@ -346,6 +376,7 @@ public:
 		}
 		out << endl << "// AUTO GENERATED by virtual-network-interface codegen" << endl;
 		out << endl << "#include <" << subs(p_type->get_full_name(), ".", "/") << (p_iface ? ".h" : ".hxx") << ">" << endl;
+		namespace_begin();
 		
 		vector<Struct*> sub_classes;
 		if(is_base) {
@@ -357,16 +388,11 @@ public:
 				}
 			}
 		}
-		
-		out << endl;
-		namespace_begin();
-		out << endl;
-		
 		if(is_base) {
 			out << "vni::Value* create(vnl::Hash32 hash) {@" << endl;
 			out << "switch(hash) {@" << endl;
 			for(Struct* sub : sub_classes) {
-				out << "case " << hash_of(sub) << ": return vni::create<" << full(sub) << ">();" << endl;
+				out << "case " << hash32_of(sub) << ": return vni::create<" << full(sub) << ">();" << endl;
 			}
 			out << "default: return 0;" << endl;
 			out << "$}" << endl << "$}" << endl << endl;
@@ -397,7 +423,7 @@ public:
 				out << "out_.putEntry(VNL_IO_STRUCT, NUM_FIELDS);" << endl;
 			}
 			for(Field* field : all_fields) {
-				out << "out_.putHash(" << hash_of(field->name) << "); ";
+				out << "out_.putHash(" << hash32_of(field) << "); ";
 				out << "vni::write(out_, " << field->name << ");" << endl;
 			}
 			out << "$}" << endl << endl;
@@ -407,7 +433,7 @@ public:
 			out << "uint32_t hash_ = 0;" << endl << "in_.getHash(hash_);" << endl;
 			out << "switch(hash_) {@" << endl;
 			for(Field* field : all_fields) {
-				out << "case " << hash_of(field->name) << ": vni::read(in_, " << field->name << "); break;" << endl;
+				out << "case " << hash32_of(field) << ": vni::read(in_, " << field->name << "); break;" << endl;
 			}
 			out << "default: in_.skip();" << endl;
 			out << "$}" << endl << "$}" << endl << "$}" << endl << endl;
@@ -418,7 +444,7 @@ public:
 			out << "switch((uint32_t)hash_) {@" << endl;
 			int index = 0;
 			for(Field* field : all_fields) {
-				out << "case " << hash_of(field->name) << ": return " << index++ << ";" << endl;
+				out << "case " << hash32_of(field) << ": return " << index++ << ";" << endl;
 			}
 			out << "default: return -1;" << endl;
 			out << "$}" << endl << "$}" << endl << endl;
@@ -451,11 +477,186 @@ public:
 			out << "$}" << endl << "$}" << endl << endl;
 		}
 		
+		if(p_iface) {
+			out << "bool " << scope << "vni_call(vnl::io::TypeInput& in_, uint32_t hash_, int num_args_) {@" << endl;
+			echo_call_switch(p_iface, false);
+			out << "return false;" << endl << "$}" << endl << endl;
+			out << "bool " << scope << "vni_const_call(vnl::io::TypeInput& in_, uint32_t hash_, int num_args_, vnl::io::TypeOutput& out_) {@" << endl;
+			echo_call_switch(p_iface, true);
+			out << "return false;" << endl << "$}" << endl << endl;
+		}
+		
+		if(p_module) {
+			out << "bool " << scope << "handle_switch(vni::Value* sample_, vnl::Address src_addr, vnl::Address dst_addr) {@" << endl;
+			echo_handle_switch(p_module);
+			out << "return false;" << endl << "$}" << endl << endl;
+		}
+		
 		out << endl << endl;
 		namespace_end();
 		if(p_iface) {
 			out << endl << "#endif // " << guard_sym;
 		}
+	}
+	
+	void generate_writer(Interface* p_iface) {
+		Object* p_object = dynamic_cast<Object*>(p_iface);
+		out << "class Writer {" << endl << "public:@" << endl;
+		out << "Writer(vnl::io::TypeOutput& out_) : _out(out_) {@" << endl;
+		out << "_out.putEntry(VNL_IO_INTERFACE, VNL_IO_BEGIN);" << endl;
+		out << "_out.putHash(VNI_HASH);" << endl << "$}" << endl;
+		if(p_object) {
+			out << "Writer(vnl::io::TypeOutput& out_, " << base_name << "* obj_) : _out(out_) {@" << endl;
+			out << "_out.putEntry(VNL_IO_INTERFACE, VNL_IO_BEGIN);" << endl;
+			out << "_out.putHash(VNI_HASH);" << endl;
+			for(Field* field : p_object->all_fields) {
+				out << "set_" << field->name << "(obj_->" << field->name << ");" << endl;
+			}
+			out << "$}" << endl;
+		}
+		out << "~Writer() {@" << endl << "_out.putEntry(VNL_IO_INTERFACE, VNL_IO_END);" << endl << "$}" << endl;
+		
+		for(Method* method : p_iface->all_methods) {
+			if(method->name == "handle") {
+				continue;
+			}
+			out << "void " << method->name << "(";
+			echo_method_params(method);
+			out << ") {@" << endl;
+			out << "_out.putEntry(VNL_IO_CALL, " << method->params.size() << ");" << endl;
+			out << "_out.putHash(" << hash32_of(method) << ");" << endl;
+			for(Field* param : method->params) {
+				out << "vni::write(_out, " << param->name << ");" << endl;
+			}
+			out << "$}" << endl;
+		}
+		if(p_object) {
+			for(Field* field : p_object->all_fields) {
+				out << "void set_" << field->name << "(";
+				echo_ref_to(field);
+				out << " value_) {@" << endl;
+				out << "_out.putEntry(VNL_IO_CALL, 1);" << endl;
+				out << "_out.putHash(" << hash32_of(field) << ");" << endl;
+				out << "vni::write(_out, value_);" << endl;
+				out << "$}" << endl;
+			}
+		}
+		
+		out << "$protected:@" << endl;
+		out << "vnl::io::TypeOutput& _out;" << endl;
+		out << "$};" << endl;
+	}
+	
+	void generate_client(Object* p_object) {
+		string client_name = p_object->name + "Client";
+		string guard_sym = "INCLUDE_VNI_GENERATED_" + subs(p_object->package->name, ".", "_") + "_" + client_name + "_HXX_";
+		out << endl << "#ifndef " << guard_sym << endl;
+		out << "#define " << guard_sym << endl << endl;
+		out << "// AUTO GENERATED by virtual-network-interface codegen" << endl << endl;
+		
+		string super;
+		if(p_object->super) {
+			super = p_object->super->name + "Client";
+		} else if(p_object->name != "Object") {
+			super = "vni.ObjectClient";
+		} else {
+			super = "vni.Client";
+		}
+		p_object->imports.insert(super);
+		p_object->imports.insert(p_object->get_full_name() + "Base");
+		echo_includes(p_object);
+		namespace_begin();
+		
+		out << "class " << client_name << " : public " << subs(super, ".", "::") << " {" << endl;
+		out << "public:@" << endl;
+		for(Method* method : p_object->all_methods) {
+			if(method->is_handle) {
+				continue;
+			}
+			out << "int " << method->name << "(";
+			echo_method_params(method, true);
+			if(method->is_const) {
+				if(method->params.size()) {
+					out << ", ";
+				}
+				echo_type(method);
+				out << "& result_";
+			}
+			out << ") {@" << endl;
+			out << "_buf.reset();" << endl;
+			out << full(p_object) << "Base::Writer _wr(_out);" << endl;
+			out << "_wr." << method->name << "(";
+			echo_method_args(method);
+			out << ");" << endl;
+			out << "vnl::Packet* _pkt = _call();" << endl;
+			out << "if(_pkt) {@" << endl;
+			if(method->is_const) {
+				out << "vni::read(_in, result_);" << endl;
+			}
+			out << "_pkt->ack();" << endl;
+			out << "$}" << endl << "return _error;";
+			out << endl << "$}" << endl << endl;
+		}
+		
+		out << "$};" << endl << endl;
+		namespace_end();
+		out << "#endif // " << guard_sym;
+	}
+	
+	void echo_call_switch(Interface* p_iface, bool is_const) {
+		Object* p_object = dynamic_cast<Object*>(p_iface);
+		out << "switch(hash_) {" << endl;
+		if(p_object && !is_const) {
+			for(Field* field : p_object->all_fields) {
+				out << "case " << hash32_of(field) << ": @" << endl;
+				out << "if(num_args_ == 1) {@" << endl;
+				out << "vni::read(in_, " << field->name << ");\nreturn true;" << endl;
+				out << "$}" << endl << "break;$" << endl;
+			}
+		}
+		map<uint32_t, vector<Method*> > call_map;
+		for(Method* method : p_iface->all_methods) {
+			if(method->is_const == is_const && !method->is_handle) {
+				call_map[method->get_hash()].push_back(method);
+			}
+		}
+		for(auto& entry : call_map) {
+			out << "case " << hash32_to_str(entry.first) << ": @" << endl;
+			out << "switch(num_args_) {@" << endl;
+			for(Method* method : entry.second) {
+				out << "case " << method->params.size() << ": {@" << endl;
+				for(Field* param : method->params) {
+					echo_field(param, true, true);
+					out << "vni::read(in_, " << param->name << ");" << endl;
+				}
+				out << "if(!in_.error()) {@" << endl;
+				if(is_const) {
+					echo_type(method);
+					out << " res_ = ";
+				}
+				out << method->name << "(";
+				echo_method_args(method);
+				out << ");" << endl;
+				if(is_const) {
+					out << "vni::write(out_, res_);" << endl;
+				}
+				out << "return true;" << endl << "$}" << endl;
+				out << "$}" << endl << "break;" << endl;
+			}
+			out << "$}" << endl << "break;$" << endl;
+		}
+		out << "}" << endl;
+	}
+	
+	void echo_handle_switch(Module* module) {
+		out << "switch(sample_->vni_hash()) {" << endl;
+		for(Method* method : module->all_methods) {
+			if(method->is_handle) {
+				out << "case " << full(method->params[0]->type) << "::VNI_HASH: ";
+				out << "handle(*sample_, src_addr, dst_addr); return true;" << endl;
+			}
+		}
+		out << "}" << endl;
 	}
 	
 	bool is_base = false;

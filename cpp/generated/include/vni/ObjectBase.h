@@ -8,7 +8,7 @@
 #ifndef CPP_GENERATED_VNI_OBJECTBASE_H_
 #define CPP_GENERATED_VNI_OBJECTBASE_H_
 
-#include <vni/Binary.h>
+#include <vni/Binary.hxx>
 #include "../../../include/vni/Interface.hxx"
 
 
@@ -25,16 +25,6 @@ public:
 	virtual const char* vni_type_name() const {
 		return "vni.Object";
 	}
-	
-	class Client : public vni::Client {
-	public:
-		int vni_serialize(vni::Binary& _result) {
-			
-		}
-		int vni_deserialize(const vni::Binary& blob) {
-			
-		}
-	};
 	
 protected:
 	virtual vni::Binary vni_serialize() const = 0;
@@ -73,6 +63,18 @@ protected:
 	}
 	
 };
+
+
+class ObjectClient : public vni::Client {
+public:
+	int vni_serialize(vni::Binary& _result) {
+		
+	}
+	int vni_deserialize(const vni::Binary& blob) {
+		
+	}
+};
+
 
 
 }

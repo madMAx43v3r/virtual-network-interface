@@ -32,19 +32,17 @@ public:
 		return "test.TestNode";
 	}
 	
-	virtual void serialize(vnl::io::TypeOutput& _out) const {
-		Writer _wr(_out);
-		_out.putEntry(VNL_IO_CALL, 1);
-		_out.putHash(0x8356785);
-		vni::write(_out, level);
-		_out.putEntry(VNL_IO_CALL, 1);
-		_out.putHash(0x8357475);
-		vni::write(_out, instance);
-	}
-	
 	class Writer {
 	public:
-		Writer(vnl::io::TypeOutput& out) : _out(out) {
+		Writer(vnl::io::TypeOutput& out_, TestNodeBase* obj_) : _out(out_) {
+			_out.putEntry(VNL_IO_INTERFACE, VNL_IO_BEGIN);
+			_out.putHash(HASH);
+			_out.putEntry(VNL_IO_CALL, 1);
+			_out.putHash(0x8356785); vni::write(_out, obj_->level);
+			_out.putEntry(VNL_IO_CALL, 1);
+			_out.putHash(0x8357475); vni::write(_out, obj_->instance);
+		}
+		Writer(vnl::io::TypeOutput& out_) : _out(out_) {
 			_out.putEntry(VNL_IO_INTERFACE, VNL_IO_BEGIN);
 			_out.putHash(HASH);
 		}
@@ -119,7 +117,7 @@ protected:
 class TestNodeClient : public vni::Object::Client {
 public:
 	int test_func(const test::TestValue* val, test::TestValue*& _result) {
-		_buf.wrap(_data);
+		_buf.reset();
 		Writer _wr(_out);
 		_wr.test_func(val);
 		vnl::Packet* _pkt = _call();
@@ -130,7 +128,7 @@ public:
 		return _error;
 	}
 	int test_func2(const test::value_t& val, test::value_t& _result) {
-		_buf.wrap(_data);
+		_buf.reset();
 		Writer _wr(_out);
 		_wr.test_func2(val);
 		vnl::Packet* _pkt = _call();

@@ -1,15 +1,15 @@
 package test;
 
 import vni.List;
-import test.Value;
-import test.value_t;
+import test.TestValue;
+import test.test_value_t;
 
 class TestType {
 	
 	Value val;
 	List<Value> list;
 	
-	value_t val2;
-	List<value_t> list2;
+	test_value_t val2;
+	List<test_value_t> list2;
 	
 }

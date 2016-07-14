@@ -155,7 +155,8 @@ public:
 	
 	void generate_header(Type* p_type) {
 		TYPE_TREE(p_type);
-		string base_name = p_type->name;
+		type_name = p_type->name;
+		base_name = p_type->name;
 		if(p_iface) {
 			base_name += "Base";
 		}
@@ -177,6 +178,8 @@ public:
 			super = "vni.Interface";
 		} else if(p_struct && p_type->name != "Value") {
 			super = "vni.Value";
+		} else if(p_enum) {
+			super = "";
 		} else {
 			super = "vni.Type";
 			is_base = true;
@@ -191,21 +194,16 @@ public:
 		namespace_begin();
 		out << endl;
 		
-		string type_name = p_type->name;
 		if(p_iface) {
 			string template_str;
 			if(p_iface->generic.size()) {
-				type_name += "<";
 				template_str = "template<";
 				for(int i = 0; i < p_iface->generic.size(); ++i) {
-					type_name += p_iface->generic[i];
 					template_str += "class " + p_iface->generic[i];
 					if(i < p_iface->generic.size()-1) {
 						template_str += ", ";
-						type_name += ", ";
 					}
 				}
-				type_name += ">";
 				template_str += ">";
 			}
 			out << template_str << endl;
@@ -248,36 +246,43 @@ public:
 				out << " " << field->name << ";" << endl;
 			}
 			
-			if(fields.size()) {
-				out << endl << base_name << "() {@" << endl;
-				for(Field* field : fields) {
-					if(!field->value.empty()) {
-						out << field->name << " = " << field->value << ";" << endl;
-					} else if(dynamic_cast<Primitive*>(field->type)) {
-						out << field->name << " = 0;" << endl;
-					}
-				}
-				out << "$}" << endl << endl;
+			out << endl;
+			if(p_object) {
+				out << base_name << "(const vnl::String& domain_, const vnl::String& topic_)" << endl;
+				out << "\t:\t" << subs(super, ".", "::") << "(domain_, topic_)" << endl << "{@" << endl;
+			} else {
+				out << base_name << "() {@" << endl;
 			}
+			for(Field* field : fields) {
+				if(!field->value.empty()) {
+					out << field->name << " = " << field->value << ";" << endl;
+				} else if(dynamic_cast<Primitive*>(field->type)) {
+					out << field->name << " = 0;" << endl;
+				}
+			}
+			out << "$}" << endl << endl;
 		}
 		
 		if(p_struct) {
 			out << "static " << type_name << "* create();" << endl;
 			out << "virtual " << type_name << "* clone() const;" << endl;
 			out << "virtual void destroy();" << endl << endl;
+			out << "virtual void serialize(vnl::io::TypeOutput& out_) const;" << endl;
+			out << "virtual void deserialize(vnl::io::TypeInput& in_, int size_);" << endl << endl;
 		}
 		if(p_struct || p_iface) {
 			out << "virtual uint32_t vni_hash() const { return VNI_HASH; }" << endl;
 			out << "virtual const char* type_name() const { return VNI_NAME; }" << endl << endl;
-			out << "virtual void serialize(vnl::io::TypeOutput& out_) const;" << endl;
-			out << "virtual void deserialize(vnl::io::TypeInput& in_, int size_);" << endl << endl;
+		}
+		if(p_struct) {
+			out << "virtual int type_size() const { return sizeof(" << type_name << "); }" << endl;
 		}
 		if(p_struct || p_object) {
 			out << "virtual int num_fields() const { return NUM_FIELDS; }" << endl;
 			out << "virtual int field_index(vnl::Hash32 hash_) const;" << endl;
 			out << "virtual const char* field_name(int index_) const;" << endl;
 			out << "virtual void get_field(int index_, vnl::String& str_) const;" << endl;
-			out << "virtual void set_field(int index_, const vnl::String& str_);" << endl << endl;
+			out << "virtual void set_field(int index_, vnl::io::ByteInput& in_);" << endl << endl;
 		}
 		
 		if(p_iface) {
@@ -311,8 +316,25 @@ public:
 		}
 		
 		out << endl << "$};" << endl << endl;
+		
+		if(p_object) {
+			out << endl;
+			generate_client(p_object);
+			out << endl;
+		}
+		
 		namespace_end();
 		out << endl << "#endif // " << guard_sym;
+	}
+	
+	void generate_writer(Interface* p_iface) {
+		Object* p_object = dynamic_cast<Object*>(p_iface);
+		
+		
+	}
+	
+	void generate_client(Object* p_object) {
+		
 	}
 	
 	void generate_source(Type* p_type) {
@@ -340,16 +362,93 @@ public:
 		namespace_begin();
 		out << endl;
 		
-		// TODO
-		
 		if(is_base) {
 			out << "vni::Value* create(vnl::Hash32 hash) {@" << endl;
-			out << "switch(hash) {" << endl;
+			out << "switch(hash) {@" << endl;
 			for(Struct* sub : sub_classes) {
-				out << "case " << hash_of(sub) << ": return " << full(sub) << "::create(); break;" << endl;
+				out << "case " << hash_of(sub) << ": return vni::create<" << full(sub) << ">();" << endl;
 			}
 			out << "default: return 0;" << endl;
-			out << "}" << endl << "$}" << endl;
+			out << "$}" << endl << "$}" << endl << endl;
+		}
+		
+		string scope = base_name + "::";
+		if(p_struct) {
+			out << type_name << "* " << scope << "create() {@" << endl;
+			out << "return vni::create<" << type_name << ">();" << endl << "$}" << endl << endl;
+			out << type_name << "* " << scope << "clone() const {@" << endl;
+			out << "return vni::create<" << type_name << ">(*this);" << endl << "$}" << endl << endl;
+			out << "void " << scope << "destroy() {@" << endl;
+			out << "return vni::Pool<" << type_name << ">::destroy(this);" << endl << "$}" << endl << endl;
+		}
+		
+		vector<Field*> all_fields;
+		if(p_struct) {
+			all_fields = p_struct->all_fields;
+		} else if(p_object) {
+			all_fields = p_object->all_fields;
+		}
+		if(p_struct) {
+			out << "void " << scope << "serialize(vnl::io::TypeOutput& out_) const {@" << endl;
+			if(p_class) {
+				out << "out_.putEntry(VNL_IO_CLASS, NUM_FIELDS);" << endl;
+				out << "out_.putHash(VNI_HASH);" << endl;
+			} else {
+				out << "out_.putEntry(VNL_IO_STRUCT, NUM_FIELDS);" << endl;
+			}
+			for(Field* field : all_fields) {
+				out << "out_.putHash(" << hash_of(field->name) << "); ";
+				out << "vni::write(out_, " << field->name << ");" << endl;
+			}
+			out << "$}" << endl << endl;
+			
+			out << "void " << scope << "deserialize(vnl::io::TypeInput& in_, int size_) {@" << endl;
+			out << "for(int i = 0; i < size_ && !in_.error(); ++i) {@" << endl;
+			out << "uint32_t hash_ = 0;" << endl << "in_.getHash(hash_);" << endl;
+			out << "switch(hash_) {@" << endl;
+			for(Field* field : all_fields) {
+				out << "case " << hash_of(field->name) << ": vni::read(in_, " << field->name << "); break;" << endl;
+			}
+			out << "default: in_.skip();" << endl;
+			out << "$}" << endl << "$}" << endl << "$}" << endl << endl;
+		}
+		
+		if(p_struct || p_object) {
+			out << "int " << scope << "field_index(vnl::Hash32 hash_) const {@" << endl;
+			out << "switch((uint32_t)hash_) {@" << endl;
+			int index = 0;
+			for(Field* field : all_fields) {
+				out << "case " << hash_of(field->name) << ": return " << index++ << ";" << endl;
+			}
+			out << "default: return -1;" << endl;
+			out << "$}" << endl << "$}" << endl << endl;
+			
+			out << "const char* " << scope << "field_name(int index_) const {@" << endl;
+			out << "switch(index_) {@" << endl;
+			index = 0;
+			for(Field* field : all_fields) {
+				out << "case " << index++ << ": return \"" << field->name << "\";" << endl;
+			}
+			out << "default: return \"?\";" << endl;
+			out << "$}" << endl << "$}" << endl << endl;
+			
+			out << "void " << scope << "get_field(int index_, vnl::String& str_) const {@" << endl;
+			out << "switch(index_) {@" << endl;
+			index = 0;
+			for(Field* field : all_fields) {
+				out << "case " << index++ << ": vni::to_string(str_, " << field->name << "); break;" << endl;
+			}
+			out << "default: str_ << \"{}\";" << endl;
+			out << "$}" << endl << "$}" << endl << endl;
+			
+			out << "void " << scope << "set_field(int index_, vnl::io::ByteInput& in_) {@" << endl;
+			out << "switch(index_) {@" << endl;
+			index = 0;
+			for(Field* field : all_fields) {
+				out << "case " << index++ << ": vni::from_string(in_, " << field->name << "); break;" << endl;
+			}
+			out << "default: break;" << endl;
+			out << "$}" << endl << "$}" << endl << endl;
 		}
 		
 		out << endl << endl;
@@ -361,6 +460,9 @@ public:
 	
 	bool is_base = false;
 	vector<string> name_space;
+	string base_name;
+	string type_name;
+	
 	ostringstream out;
 	
 };

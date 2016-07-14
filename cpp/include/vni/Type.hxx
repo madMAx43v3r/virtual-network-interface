@@ -179,6 +179,41 @@ vnl::String to_string(const T& ref) {
 }
 
 
+/*
+ * Generic from_string functions
+ */
+inline void from_string(vnl::io::ByteInput& in, const Value* obj) {
+	if(obj) {
+		obj->from_string(in);
+	}
+}
+
+inline void from_string(vnl::io::ByteInput& in, const Value& obj) {
+	return obj.from_string(in);
+}
+
+inline void from_string(vnl::io::ByteInput& in, const Interface& obj) {
+	return obj.from_string(in);
+}
+
+inline void from_string(vnl::io::ByteInput& in, const bool& val) { /* TODO */ }
+inline void from_string(vnl::io::ByteInput& in, const int8_t& val) { /* TODO */ }
+inline void from_string(vnl::io::ByteInput& in, const int16_t& val) { /* TODO */ }
+inline void from_string(vnl::io::ByteInput& in, const int32_t& val) { /* TODO */ }
+inline void from_string(vnl::io::ByteInput& in, const int64_t& val) { /* TODO */ }
+inline void from_string(vnl::io::ByteInput& in, const float& val) { /* TODO */ }
+inline void from_string(vnl::io::ByteInput& in, const double& val) { /* TODO */ }
+
+template<typename T, int N>
+void from_string(vnl::io::ByteInput& in, const vnl::Vector<T, N>& vec) {
+	// TODO
+}
+
+template<typename T>
+void from_string(const vnl::String& str, const T& ref) {
+	// TODO
+}
+
 
 
 

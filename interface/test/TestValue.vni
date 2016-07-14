@@ -6,6 +6,6 @@ class TestValue {
 	int z;
 }
 
-struct value_t {
+struct test_value_t {
 	float pos[3];
 }

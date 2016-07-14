@@ -26,7 +26,7 @@ public:
 	
 	static void destroy(T* obj) {
 		if(obj) {
-			assert(obj->vni_hash() == T::HASH);
+			assert(obj->vni_hash() == T::VNI_HASH);
 			sync.lock();
 			pool.destroy(obj);
 			sync.unlock();

@@ -69,7 +69,7 @@ public:
 		// default: nothing
 	}
 	
-	virtual void set_field(int index_, const vnl::String& str_) {
+	virtual void set_field(int index_, vnl::io::ByteInput& in_) {
 		// default: nothing
 	}
 	

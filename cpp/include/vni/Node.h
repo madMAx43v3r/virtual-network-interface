@@ -8,7 +8,7 @@
 #ifndef INCLUDE_VNI_NODE_H_
 #define INCLUDE_VNI_NODE_H_
 
-#include <vni/NodeBase.h>
+#include <vni/NodeBase.hxx>
 
 
 namespace vni {

@@ -8,7 +8,7 @@
 #ifndef INCLUDE_VNI_CLIENT_H_
 #define INCLUDE_VNI_CLIENT_H_
 
-#include <vni/ClientBase.h>
+#include <vni/ClientBase.hxx>
 #include <vni/Frame.h>
 #include <vnl/Stream.h>
 #include <vnl/Router.h>
@@ -16,23 +16,24 @@
 
 namespace vni {
 
+enum {
+	VNI_SUCCESS = 0, VNI_ERROR = -1
+};
+
 class Client : public ClientBase, public vnl::Stream {
 public:
 	Client()
 		:	_error(0), _in(&_buf), _out(&_buf)
 	{
-		_data = vnl::Page::alloc();
+		data = vnl::Page::alloc();
+		_buf.wrap(data);
 	}
 	
 	~Client() {
 		if(is_connected) {
 			Stream::close(dst);
 		}
-		_data->free_all();
-	}
-	
-	virtual void vni_set_address(int64_t A, int64_t B) {
-		vni_set_address(vnl::Address(A, B));
+		data->free_all();
 	}
 	
 	void vni_set_address(vnl::Address dst_) {
@@ -57,11 +58,18 @@ public:
 	}
 	
 	virtual void serialize(vnl::io::TypeOutput& out) const {
-		Writer _wr(out);
-		_wr.vni_set_address(dst.A, dst.B);
+		Writer wr(out);
+		dst.serialize(out);
+	}
+	
+	virtual void deserialize(vnl::io::TypeInput& in, int size) {
+		dst.deserialize(in, size);
 	}
 	
 protected:
+	vnl::io::ByteBuffer _buf;
+	vnl::io::TypeInput _in;
+	vnl::io::TypeOutput _out;
 	int _error;
 	
 	vnl::Packet* _call() {
@@ -71,9 +79,9 @@ protected:
 		Frame* ret = 0;
 		while(true) {
 			Frame frame;
-			frame.data = _data;
+			frame.data = data;
 			frame.size = _buf.position();
-			frame.seq = next_seq;
+			frame.seq_num = next_seq;
 			send(&frame, dst);
 			frame.data = 0;
 			// TODO
@@ -91,10 +99,7 @@ protected:
 	
 private:
 	vnl::Address dst;
-	vnl::Page* _data;
-	vnl::io::ByteBuffer _buf;
-	vnl::io::TypeInput _in;
-	vnl::io::TypeOutput _out;
+	vnl::Page* data;
 	uint32_t next_seq = 0;
 	int64_t timeout = 1000;
 	bool do_fail_if_timeout = false;

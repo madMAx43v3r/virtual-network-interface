@@ -104,6 +104,16 @@ public:
 			
 			Interface* p_iface = dynamic_cast<Interface*>(entry.second);
 			if(p_iface) {
+				for(Method* method : p_iface->methods) {
+					if(method->is_const && method->type->get_name() == "void") {
+						error(method) << "const method needs cannot return void" << endl;
+						FAIL();
+					}
+					if(!method->is_const && method->type->get_name() != "void") {
+						error(method) << "non-const method must return void" << endl;
+						FAIL();
+					}
+				}
 				p_iface->all_methods = p_iface->methods;
 				Interface* super = p_iface->super;
 				while(super) {

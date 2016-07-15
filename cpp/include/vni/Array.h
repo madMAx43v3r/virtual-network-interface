@@ -21,7 +21,7 @@ public:
 	
 	Array& operator=(const vnl::Array<T>& other) {
 		vnl::Array<T>::clear();
-		append(other);
+		vnl::Array<T>::append(other);
 		return *this;
 	}
 	

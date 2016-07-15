@@ -20,7 +20,7 @@ class Sample : public vnl::Packet {
 public:
 	Sample() {
 		pkt_id = PID_SAMPLE;
-		payload = &data;
+		payload = this;
 	}
 	
 	~Sample() {

@@ -21,13 +21,15 @@ public:
 	}
 	
 protected:
-	virtual bool handle_switch(vni::Value* sample, vnl::Address src_addr, vnl::Address dst_addr) = 0;
+	virtual bool handle_switch(vni::Value* sample, vnl::Address src_addr, vnl::Address dst_addr) {
+		return false;
+	}
 	
 	virtual bool handle(vnl::Packet* pkt) {
 		if(pkt->pkt_id == vni::PID_SAMPLE) {
-			vni::Value* sample = ((Sample*)pkt)->data;
-			if(sample) {
-				handle_switch(sample, pkt->src_addr, pkt->dst_addr);
+			Sample* sample = (Sample*)pkt->payload;
+			if(sample->data) {
+				handle_switch(sample->data, pkt->src_addr, pkt->dst_addr);
 			}
 			return false;
 		} else {

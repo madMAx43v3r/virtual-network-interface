@@ -21,7 +21,7 @@ public:
 	
 	List& operator=(const vnl::List<T>& other) {
 		vnl::List<T>::clear();
-		append(other);
+		vnl::List<T>::append(other);
 		return *this;
 	}
 	

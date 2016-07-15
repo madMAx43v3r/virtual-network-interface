@@ -13,7 +13,7 @@
 #include <vni/Pool.h>
 
 #include <vni/Value.hxx>
-#include <vni/Interface.hxx>
+#include "Interface.h"
 
 
 namespace vni {

@@ -17,7 +17,7 @@ namespace vni {
 class TcpClient : public Downlink {
 public:
 	TcpClient(vnl::String endpoint, int port = 8916, vnl::String name = "default")
-		:	Downlink(vnl::StringWriter().out << "vni/tcp/client/" << endpoint << "/" << vnl::dec(port) << "/" << name),
+		:	Downlink(vnl::String() << "vni/tcp/client/" << endpoint << "/" << vnl::dec(port) << "/" << name),
 			endpoint(endpoint), port(port), sock(-1)
 	{
 	}

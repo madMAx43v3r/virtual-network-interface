@@ -7,7 +7,7 @@ module TestNode {
 	
 	void handle(TestType ev);
 	
-	Value test_func(Value val) const;
+	TestValue test_func(TestValue val) const;
 	test_value_t test_func2(test_value_t val) const;
 	
 }

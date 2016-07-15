@@ -19,9 +19,11 @@ public:
 	vnl::Page* data;
 	int size;
 	
-	Binary() {
-		data = 0;
-		size = 0;
+	Binary() : data(0), size(0) {
+	}
+	
+	Binary(const Binary& other) : data(0), size(0) {
+		*this = other;
 	}
 	
 	~Binary() {

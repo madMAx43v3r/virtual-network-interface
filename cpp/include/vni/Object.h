@@ -9,6 +9,7 @@
 #define INCLUDE_VNI_OBJECT_H_
 
 #include <vnl/Module.h>
+#include <vni/Sample.h>
 #include <vni/ObjectSupport.hxx>
 #include <vni/Instance.hxx>
 
@@ -40,25 +41,18 @@ protected:
 	virtual void publish(vni::Value* data, vnl::Address topic) {
 		vni::Sample* pkt = buffer.create<vni::Sample>();
 		pkt->src_addr = my_address;
+		pkt->seq_num = next_seq++;
 		pkt->data = data;
 		send_async(pkt, topic);
 	}
 	
-	virtual bool handle(vnl::Message* msg) {
-		if(msg->msg_id == vnl::Packet::MID) {
-			vnl::Packet* pkt = (vnl::Packet*)msg;
-			uint32_t& last_seq = sources[pkt->src_addr];
-			// TODO: handle sequence wrap around
-			if(pkt->seq_num <= last_seq) {
-				return handle_duplicate(pkt);
-			}
-			last_seq = pkt->seq_num;
-			return handle(pkt);
-		}
-		return Module::handle(msg);
-	}
-	
 	virtual bool handle(vnl::Packet* pkt) {
+		uint32_t& last_seq = sources[pkt->src_addr];
+		// TODO: handle sequence wrap around
+		if(pkt->seq_num <= last_seq) {
+			return handle_duplicate(pkt);
+		}
+		last_seq = pkt->seq_num;
 		if(pkt->pkt_id == vni::PID_FRAME) {
 			Frame* request = (Frame*)pkt->payload;
 			Frame* result = buffer.create<Frame>();
@@ -144,6 +138,7 @@ private:
 	vnl::io::ByteBuffer buf_out;
 	vnl::io::TypeInput in;
 	vnl::io::TypeOutput out;
+	uint32_t next_seq = 1;
 	
 };
 

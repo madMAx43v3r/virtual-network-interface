@@ -16,6 +16,20 @@ namespace vni {
 
 class String : public StringBase, public vnl::String {
 public:
+	vnl::String& operator=(const char* str) {
+		clear();
+		return *this << str;
+	}
+	
+	vnl::String& operator=(const std::string& str) {
+		clear();
+		return *this << str;
+	}
+	
+	vnl::String& operator=(const vnl::String& str) {
+		clear();
+		return *this << str;
+	}
 	
 	virtual void to_string(vnl::String& str) const {
 		// TODO: escape

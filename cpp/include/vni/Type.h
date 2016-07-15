@@ -17,7 +17,7 @@ namespace vni {
 class Type : public vnl::io::Serializable {
 public:
 	Type() {}
-	Type(const Type& other) = delete;
+	
 	virtual ~Type() {}
 	
 	virtual uint32_t vni_hash() const = 0;

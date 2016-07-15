@@ -8,7 +8,7 @@
 #ifndef CPP_INCLUDE_VNI_ARRAY_H_
 #define CPP_INCLUDE_VNI_ARRAY_H_
 
-#include <vni/ArrayBase.hxx>
+#include <vni/ArraySupport.hxx>
 #include <vnl/Array.h>
 
 
@@ -43,7 +43,7 @@ public:
 		int id = in.getEntry(size);
 		if(id == VNL_IO_ARRAY) {
 			for(int i = 0; i < size && !in.error(); ++i) {
-				vni::read(in, push_back(T()));
+				vni::read(in, push_back());
 			}
 		} else {
 			in.skip(id, size);

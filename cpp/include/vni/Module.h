@@ -8,7 +8,7 @@
 #ifndef INCLUDE_VNI_MODULE_H_
 #define INCLUDE_VNI_MODULE_H_
 
-#include <vni/ModuleBase.hxx>
+#include <vni/ModuleSupport.hxx>
 
 
 namespace vni {

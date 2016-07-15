@@ -8,7 +8,7 @@
 #ifndef CPP_VNI_LIST_H_
 #define CPP_VNI_LIST_H_
 
-#include <vni/ListBase.hxx>
+#include <vni/ListSupport.hxx>
 #include <vnl/List.h>
 
 
@@ -43,7 +43,7 @@ public:
 		int id = in.getEntry(size);
 		if(id == VNL_IO_ARRAY) {
 			for(int i = 0; i < size && !in.error(); ++i) {
-				vni::read(in, vnl::List<T>::push_back(T()));
+				vni::read(in, vnl::List<T>::push_back());
 			}
 		} else {
 			in.skip(id, size);

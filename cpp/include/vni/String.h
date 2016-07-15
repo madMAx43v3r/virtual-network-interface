@@ -8,7 +8,7 @@
 #ifndef CPP_INCLUDE_VNI_STRING_H_
 #define CPP_INCLUDE_VNI_STRING_H_
 
-#include <vni/StringBase.hxx>
+#include <vni/StringSupport.hxx>
 #include <vnl/String.h>
 
 

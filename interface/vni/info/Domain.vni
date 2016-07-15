@@ -1,8 +1,0 @@
-package vni.info;
-
-class Domain {
-	
-	long hash;
-	String name;
-	
-}

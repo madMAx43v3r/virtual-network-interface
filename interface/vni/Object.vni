@@ -7,9 +7,6 @@ import vni.info.Class;
 
 object Object {
 	
-	String my_domain = "default";
-	String my_topic;
-	
 	Class get_class() const;
 	
 	Binary vni_serialize() const;

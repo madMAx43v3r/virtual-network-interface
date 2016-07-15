@@ -12,7 +12,6 @@
 #include <fcntl.h>
 #include <sys/poll.h>
 
-#include <vni/Port.h>
 #include <vni/Uplink.h>
 #include <vnl/Module.h>
 #include <vnl/Map.h>
@@ -35,7 +34,7 @@ public:
 	
 	virtual void receive(vnl::Message* msg) {
 		if(msg->msg_id == vnl::Registry::exit_t::MID) {
-			run = false;
+			dorun = false;
 			if(sock) {
 				sock->close();
 			}
@@ -52,7 +51,8 @@ protected:
 			if(!sock) {
 				break;
 			}
-			Uplink::enable_t* enable = buffer.create<Uplink::enable_t>(sock);
+			Uplink::enable_t* enable = buffer.create<Uplink::enable_t>();
+			enable->data = sock;
 			send_async(enable, uplink);
 			vnl::io::TypeInput in(sock);
 			while(dorun) {

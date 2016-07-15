@@ -9,8 +9,8 @@
 #define INCLUDE_VNI_OBJECT_H_
 
 #include <vnl/Module.h>
-#include <vni/ObjectBase.h>
-#include <vni/info/Announce.hxx>
+#include <vni/ObjectSupport.hxx>
+#include <vni/Instance.hxx>
 
 
 namespace vni {
@@ -28,10 +28,11 @@ public:
 protected:
 	virtual void run() {
 		Module::open(my_address);
-		vni::info::Announce* announce = vni::info::Announce::create();
+		vni::Instance* announce = vni::Instance::create();
+		announce->type = type_name();
 		announce->domain = my_domain;
 		announce->topic = my_topic;
-		publish(announce, vnl::Address(my_address.A, "vni/info/Announce"));
+		publish(announce, vnl::Address(my_address.A, "vni/Announce"));
 		Module::run();
 		Module::close(my_address);
 	}
@@ -109,7 +110,7 @@ protected:
 	
 	virtual vni::info::Class get_class() const {
 		vni::info::Class res;
-		res.name = VNI_NAME;
+		res.name = type_name();
 		// TODO
 		return res;
 	}

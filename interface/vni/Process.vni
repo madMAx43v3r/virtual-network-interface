@@ -1,0 +1,11 @@
+package vni;
+
+class Process {
+	
+	int id = -1;
+	String name;
+	
+	List<String> domains;
+	List<Instance> objects;
+	
+}

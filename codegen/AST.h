@@ -56,7 +56,7 @@ std::ostream& error() {
 class Base {
 public:
 	string file;
-	string line;
+	int line;
 	
 	Base() {
 		file = CURR_FILE;
@@ -386,21 +386,28 @@ void Struct::compile() {
 	for(Field* field : fields) {
 		import(field);
 	}
-	check_dup_fields(fields);
 	all_fields = fields;
+	check_dup_fields(all_fields);
 }
 
 void Class::compile() {
 	Struct::compile();
+	if(super) {
+		import(super);
+	}
 	Class* next = super;
 	while(next) {
 		all_fields.insert(all_fields.end(), next->fields.begin(), next->fields.end());
 		next = next->super;
 	}
+	check_dup_fields(all_fields);
 }
 
 void Interface::compile() {
 	Type::compile();
+	if(super) {
+		import(super);
+	}
 	for(Method* method : methods) {
 		import(method);
 		for(Field* param : method->params) {
@@ -437,10 +444,12 @@ void Interface::compile() {
 
 void Object::compile() {
 	Interface::compile();
+	if(super) {
+		import(super);
+	}
 	for(Field* field : fields) {
 		import(field);
 	}
-	check_dup_fields(fields);
 	all_fields = fields;
 	Object* next = super;
 	while(next) {
@@ -455,6 +464,7 @@ void Object::compile() {
 		all_methods.insert(all_methods.end(), iface->methods.begin(), iface->methods.end());
 	}
 	all_methods = get_unique_methods(all_methods);
+	check_dup_fields(all_fields);
 }
 
 

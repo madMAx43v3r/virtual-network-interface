@@ -18,7 +18,8 @@ static const uint32_t PID_SAMPLE = 0xa37b95eb;
 
 class Sample : public vnl::Packet {
 public:
-	Sample() : Packet(PID_SAMPLE) {
+	Sample() {
+		pkt_id = PID_SAMPLE;
 		payload = &data;
 	}
 	

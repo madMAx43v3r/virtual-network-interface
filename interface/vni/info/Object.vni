@@ -1,8 +1,7 @@
 package vni.info;
 
-class Object {
+class Object extends Class {
 	
-	String domain;
-	String name;
+	List<Method> methods;
 	
 }

@@ -20,7 +20,8 @@ public:
 	vnl::Page* data = 0;
 	int size = 0;
 	
-	Frame() : Packet(PID_FRAME) {
+	Frame() {
+		pkt_id = PID_FRAME;
 		payload = this;
 	}
 	
@@ -32,7 +33,6 @@ public:
 	
 protected:
 	virtual void write(vnl::io::TypeOutput& out) const {
-		out.writeInt(seq);
 		if(data) {
 			out.putBinary(data, size);
 		} else {
@@ -41,7 +41,6 @@ protected:
 	}
 	
 	virtual void read(vnl::io::TypeInput& in, int id, int size) {
-		in.readInt(seq);
 		if(!data) {
 			data = vnl::Page::alloc();
 			in.getBinary(data, size);

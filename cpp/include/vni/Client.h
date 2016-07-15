@@ -8,7 +8,7 @@
 #ifndef INCLUDE_VNI_CLIENT_H_
 #define INCLUDE_VNI_CLIENT_H_
 
-#include <vni/ClientBase.hxx>
+#include <vni/ClientSupport.hxx>
 #include <vni/Frame.h>
 #include <vnl/Stream.h>
 #include <vnl/Router.h>
@@ -34,6 +34,10 @@ public:
 			Stream::close(dst);
 		}
 		data->free_all();
+	}
+	
+	virtual void vni_set_target(const vni::String& domain, const vni::String& topic) {
+		vni_set_address(vnl::Address(domain, topic));
 	}
 	
 	void vni_set_address(vnl::Address dst_) {

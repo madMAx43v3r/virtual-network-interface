@@ -8,7 +8,7 @@
 #ifndef CPP_VNI_LIST_H_
 #define CPP_VNI_LIST_H_
 
-#include <vni/ListBase.h>
+#include <vni/ListBase.hxx>
 #include <vnl/List.h>
 
 
@@ -20,7 +20,7 @@ public:
 	virtual ~List() {}
 	
 	List& operator=(const vnl::List<T>& other) {
-		clear();
+		vnl::List<T>::clear();
 		append(other);
 		return *this;
 	}
@@ -30,9 +30,11 @@ public:
 	}
 	
 	virtual void serialize(vnl::io::TypeOutput& out) const {
-		Writer wr(out);
-		out.putEntry(VNL_IO_ARRAY, size());
-		for(const_iterator iter = begin(); iter != end() && !out.error(); ++iter) {
+		typename vni::ListBase<T>::Writer wr(out);
+		out.putEntry(VNL_IO_ARRAY, vnl::List<T>::size());
+		for(typename vnl::List<T>::const_iterator iter = vnl::List<T>::begin();
+				iter != vnl::List<T>::end() && !out.error(); ++iter)
+		{
 			vni::write(out, *iter);
 		}
 	}
@@ -41,12 +43,12 @@ public:
 		int id = in.getEntry(size);
 		if(id == VNL_IO_ARRAY) {
 			for(int i = 0; i < size && !in.error(); ++i) {
-				vni::read(in, push_back(T()));
+				vni::read(in, vnl::List<T>::push_back(T()));
 			}
 		} else {
 			in.skip(id, size);
 		}
-		in.skip(VNL_IO_INTERFACE, 0, VNI_HASH);
+		in.skip(VNL_IO_INTERFACE, 0, vni::ListBase<T>::VNI_HASH);
 	}
 	
 };

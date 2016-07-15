@@ -57,14 +57,6 @@ protected:
 		return Module::handle(msg);
 	}
 	
-	virtual bool handle_duplicate(vnl::Packet* pkt) {
-		if(pkt->pkt_id == vni::PID_FRAME) {
-			Frame* result = buffer.create<Frame>();
-			send_async(result, pkt->src_addr);
-		}
-		return false;
-	}
-	
 	virtual bool handle(vnl::Packet* pkt) {
 		if(pkt->pkt_id == vni::PID_FRAME) {
 			Frame* request = (Frame*)pkt->payload;
@@ -103,6 +95,14 @@ protected:
 				result->data = buf_out.release();
 			}
 			send_async(result, request->src_addr);
+		}
+		return false;
+	}
+	
+	virtual bool handle_duplicate(vnl::Packet* pkt) {
+		if(pkt->pkt_id == vni::PID_FRAME) {
+			Frame* result = buffer.create<Frame>();
+			send_async(result, pkt->src_addr);
 		}
 		return false;
 	}

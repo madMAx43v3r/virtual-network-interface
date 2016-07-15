@@ -28,6 +28,8 @@ class Backend {
 public:
 	string root = "generated/";
 	
+	set<string> whitelist;
+	
 	virtual ~Backend() {
 		delete_old(root);
 	}
@@ -53,13 +55,23 @@ public:
 		files_written.insert(file_name);
 		
 		string source = augment_source(content);
+		bool same = false;
 		
-		// TODO: check for equal
-		
-		cout << "UPDATE " << file_name << endl;
-		ofstream output(file_name, ios::trunc);
-		output << source << endl;
-		output.close();
+		std::ifstream reader(file_name, ios::in);
+		if(reader.good()) {
+			std::stringstream buffer;
+			buffer << reader.rdbuf();
+			if(buffer.str() == source) {
+				same = true;
+			}
+		}
+		reader.close();
+		if(!same) {
+			cout << "UPDATE " << file_name << endl;
+			ofstream output(file_name, ios::trunc);
+			output << source;
+			output.close();
+		}
 	}
 	
 	string augment_source(string input) {
@@ -97,14 +109,14 @@ public:
 				string name = ent->d_name;
 				string file = path + name;
 				if(ent->d_type == DT_REG) {
-					if(!files_written.count(file)) {
+					if(!files_written.count(file) && !whitelist.count(name)) {
 						cout << "DELETE " << file << endl;
 						remove(file.c_str());
 					} else {
 						count++;
 					}
 				} else if(ent->d_type == DT_DIR) {
-					if(name != "." && name != "..") {
+					if(name != "." && name != ".." && !whitelist.count(name)) {
 						int res = delete_old(file + "/");
 						if(!res) {
 							cout << "DELETE " << file << endl;

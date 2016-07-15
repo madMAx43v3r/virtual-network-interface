@@ -9,6 +9,7 @@
 #define CPP_VNI_TYPE_H_
 
 #include <vnl/io.h>
+#include <vnl/Hash.h>
 
 
 namespace vni {

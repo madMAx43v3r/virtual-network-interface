@@ -10,14 +10,8 @@
 
 #include <vnl/Vector.h>
 #include <vni/Type.h>
+#include <vni/Pool.h>
 
-#include <vni/Value.hxx>
-#include <vni/Array.hxx>
-#include <vni/List.hxx>
-#include <vni/Bool.hxx>
-#include <vni/Integer.hxx>
-#include <vni/Real.hxx>
-#include <vni/String.hxx>
 #include <vni/Value.hxx>
 #include <vni/Interface.hxx>
 
@@ -40,7 +34,7 @@ inline Value* read(vnl::io::TypeInput& in) {
 		case VNL_IO_CLASS: {
 			uint32_t hash = 0;
 			in.getHash(hash);
-			obj = create(hash);
+			obj = vni::create(hash);
 			if(obj) {
 				obj->deserialize(in, size);
 			}
@@ -49,14 +43,6 @@ inline Value* read(vnl::io::TypeInput& in) {
 		default: in.skip(id, size);
 	}
 	return obj;
-}
-
-inline void read(vnl::io::TypeInput& in, Value* obj) {
-	if(obj) {
-		read(in, *obj);
-	} else {
-		in.skip();
-	}
 }
 
 inline void read(vnl::io::TypeInput& in, Value& obj) {
@@ -73,6 +59,14 @@ inline void read(vnl::io::TypeInput& in, Value& obj) {
 			break;
 		}
 		default: in.skip(id, size);
+	}
+}
+
+inline void read(vnl::io::TypeInput& in, Value* obj) {
+	if(obj) {
+		read(in, *obj);
+	} else {
+		in.skip();
 	}
 }
 
@@ -105,16 +99,16 @@ void read(vnl::io::TypeInput& in, vnl::Vector<T, N>& vec) { in.getArray(vec); }
 /*
  * Generic writer functions
  */
+inline void write(vnl::io::TypeOutput& out, const Value& obj) {
+	obj.serialize(out);
+}
+
 inline void write(vnl::io::TypeOutput& out, const Value* obj) {
 	if(obj) {
 		obj->serialize(out);
 	} else {
 		out.putNull();
 	}
-}
-
-inline void write(vnl::io::TypeOutput& out, const Value& obj) {
-	obj.serialize(out);
 }
 
 inline void write(vnl::io::TypeOutput& out, const Interface& obj) {
@@ -136,16 +130,16 @@ void write(vnl::io::TypeOutput& out, const vnl::Vector<T, N>& vec) { out.putArra
 /*
  * Generic to_string functions
  */
+inline void to_string(vnl::String& str, const Value& obj) {
+	return obj.to_string(str);
+}
+
 inline void to_string(vnl::String& str, const Value* obj) {
 	if(obj) {
 		obj->to_string(str);
 	} else {
 		str << "{}";
 	}
-}
-
-inline void to_string(vnl::String& str, const Value& obj) {
-	return obj.to_string(str);
 }
 
 inline void to_string(vnl::String& str, const Interface& obj) {
@@ -183,14 +177,14 @@ vnl::String to_string(const T& ref) {
 /*
  * Generic from_string functions
  */
+inline void from_string(vnl::io::ByteInput& in, const Value& obj) {
+	return obj.from_string(in);
+}
+
 inline void from_string(vnl::io::ByteInput& in, const Value* obj) {
 	if(obj) {
 		obj->from_string(in);
 	}
-}
-
-inline void from_string(vnl::io::ByteInput& in, const Value& obj) {
-	return obj.from_string(in);
 }
 
 inline void from_string(vnl::io::ByteInput& in, const Interface& obj) {

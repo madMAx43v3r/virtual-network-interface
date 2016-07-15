@@ -1,6 +1,6 @@
 package vni.info;
 
 class Parameter {
-	Class type;
+	String type;
 	String name;
 }

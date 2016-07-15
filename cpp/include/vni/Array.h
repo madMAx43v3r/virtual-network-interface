@@ -20,7 +20,7 @@ public:
 	virtual ~Array() {}
 	
 	Array& operator=(const vnl::Array<T>& other) {
-		clear();
+		vnl::Array<T>::clear();
 		append(other);
 		return *this;
 	}
@@ -30,9 +30,11 @@ public:
 	}
 	
 	virtual void serialize(vnl::io::TypeOutput& out) const {
-		Writer wr(out);
-		out.putEntry(VNL_IO_ARRAY, size());
-		for(const_iterator iter = begin(); iter != end() && !out.error(); ++iter) {
+		typename vnl::Array<T>::Writer wr(out);
+		out.putEntry(VNL_IO_ARRAY, vnl::Array<T>::size());
+		for(typename vnl::Array<T>::const_iterator iter = vnl::Array<T>::begin();
+				iter != vnl::Array<T>::end() && !out.error(); ++iter)
+		{
 			vni::write(out, *iter);
 		}
 	}
@@ -46,7 +48,7 @@ public:
 		} else {
 			in.skip(id, size);
 		}
-		in.skip(VNL_IO_INTERFACE, 0, VNI_HASH);
+		in.skip(VNL_IO_INTERFACE, 0, vni::ArrayBase<T>::VNI_HASH);
 	}
 	
 };

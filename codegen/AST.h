@@ -224,7 +224,8 @@ public:
 		}
 	}
 	
-	void import(TypeName* import);
+	void import(Type* type);
+	void import(TypeName* name);
 	
 	virtual string get_name() { return name; }
 	virtual string get_full_name() { return package->get_full_name() + "." + get_name(); }
@@ -354,20 +355,31 @@ vector<Method*> get_unique_methods(vector<Method*>& methods) {
 }
 
 
-void Type::import(TypeName* import) {
-	Type* p_type = dynamic_cast<Type*>(import->type);
-	Interface* p_iface = dynamic_cast<Interface*>(import->type);
+void Type::import(Type* p_type) {
+	imports.insert(p_type->package->name + "." + p_type->name);
+}
+
+void Type::import(TypeName* p_name) {
+	Type* p_type = dynamic_cast<Type*>(p_name->type);
+	Interface* p_iface = dynamic_cast<Interface*>(p_name->type);
 	if(p_type) {
-		imports.insert(p_type->package->name + "." + p_type->name);
-		for(Base* param : import->tmpl) {
-			
+		import(p_type);
+		for(Base* param : p_name->tmpl) {
+			Type* p_param_type = dynamic_cast<Type*>(param);
+			TypeName* p_param_name = dynamic_cast<TypeName*>(param);
+			if(p_param_name) {
+				import(p_param_name);
+			} else {
+				import(p_param_type);
+			}
 		}
 	}
-	if(import->tmpl.size() && (!p_iface || p_iface->generic.empty())) {
-		error(import) << "is not a template" << endl;
+	if(p_name->tmpl.size() && (!p_iface || p_iface->generic.empty())) {
+		error(p_name) << "is not a template" << endl;
 		FAIL();
 	}
 }
+
 
 void Struct::compile() {
 	Type::compile();

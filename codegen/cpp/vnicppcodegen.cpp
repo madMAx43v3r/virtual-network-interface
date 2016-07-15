@@ -20,7 +20,9 @@ int main(int argc, char** argv) {
 	}
 	
 	Compiler<VNIParser> compiler;
-	compiler.root_dirs.push_back(argv[1]);
+	for(int i = 1; i < argc; ++i) {
+		compiler.root_dirs.push_back(argv[i]);
+	}
 	
 	compiler.compile();
 	

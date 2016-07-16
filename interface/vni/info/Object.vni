@@ -1,7 +1,0 @@
-package vni.info;
-
-class Object extends Class {
-	
-	List<Method> methods;
-	
-}

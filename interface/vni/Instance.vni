@@ -1,9 +1,0 @@
-package vni;
-
-class Instance {
-	
-	String type;
-	String domain;
-	String topic;
-	
-}

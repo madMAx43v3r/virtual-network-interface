@@ -1,8 +1,0 @@
-package vni;
-
-// A Module can also receive multicast samples.
-// Like: void handle(Value sample);
-
-module Module {
-	
-}

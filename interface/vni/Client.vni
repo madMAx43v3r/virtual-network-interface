@@ -1,7 +1,0 @@
-package vni;
-
-interface Client {
-	
-	void vni_set_target(String domain, String topic);
-	
-}

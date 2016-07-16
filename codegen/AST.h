@@ -67,10 +67,9 @@ public:
 	virtual Base* get() { return this; }
 	
 	virtual string get_name() = 0;
-	virtual string get_full_name() = 0;
 	
 	virtual uint64_t get_hash() {
-		return hash64(get_full_name());
+		return hash64(get_name());
 	}
 	
 	virtual void compile() {}
@@ -90,7 +89,6 @@ public:
 	Package(string name) : name(name) {}
 	
 	string get_name() {	return name; }
-	string get_full_name() { return name; }
 	
 	static Package* get(string name) {
 		Base* base = INDEX[name];
@@ -111,7 +109,6 @@ public:
 
 class Void : public Base {
 	virtual string get_name() { return "void"; }
-	virtual string get_full_name() { return "void"; }
 };
 
 class Primitive : public Base {
@@ -121,7 +118,6 @@ class Primitive : public Base {
 class Bool : public Primitive {
 public:
 	virtual string get_name() { return "bool"; }
-	virtual string get_full_name() { return "bool"; }
 };
 
 class Integer : public Primitive {
@@ -132,7 +128,6 @@ public:
 	Integer(string name, int size) : name(name), size(size) {}
 	
 	virtual string get_name() { return name; }
-	virtual string get_full_name() { return name; }
 };
 
 class Real : public Primitive {
@@ -143,11 +138,10 @@ public:
 	Real(string name, int size) : name(name), size(size) {}
 	
 	virtual string get_name() { return name; }
-	virtual string get_full_name() { return name; }
 };
 
 
-class Array : public Base {
+class Vector : public Base {
 public:
 	Base* type = 0;
 	int size = 0;
@@ -157,11 +151,28 @@ public:
 		ss << type->get_name() << "[" << size << "]";
 		return ss.str();
 	}
-	virtual string get_full_name() {
-		std::ostringstream ss;
-		ss << type->get_full_name() << "[" << size << "]";
-		return ss.str();
-	}
+};
+
+
+class Binary : public Base {
+public:
+	virtual string get_name() { return "Binary"; }
+};
+
+class String : public Base {
+public:
+	virtual string get_name() { return "String"; }
+};
+
+
+class Array : public Base {
+public:
+	virtual string get_name() { return "Array"; }
+};
+
+class List : public Base {
+public:
+	virtual string get_name() { return "List"; }
 };
 
 
@@ -180,7 +191,6 @@ public:
 	bool is_const = false;
 	
 	virtual string get_name() { return name; }
-	virtual string get_full_name() { return name; }
 	virtual uint64_t get_hash() { return hash64(name); }
 };
 
@@ -193,7 +203,6 @@ public:
 	bool is_handle = false;
 	
 	virtual string get_name() { return name; }
-	virtual string get_full_name() { return name; }
 	virtual uint64_t get_hash() {
 		CRC64 hash;
 		hash.update(name);
@@ -228,7 +237,7 @@ public:
 	void import(TypeName* name);
 	
 	virtual string get_name() { return name; }
-	virtual string get_full_name() { return package->get_full_name() + "." + get_name(); }
+	virtual string get_full_name() { return package->name + "." + name; }
 };
 
 
@@ -283,7 +292,7 @@ public:
 class Object : public Interface {
 public:
 	Object* super = 0;
-	vector<Interface*> implements;
+	vector<Object*> implements;
 	
 	vector<Field*> constants;
 	vector<Field*> fields;
@@ -345,6 +354,9 @@ vector<Method*> get_unique_methods(vector<Method*>& methods) {
 	map<uint64_t, Method*> map;
 	for(Method* method : methods) {
 		uint64_t hash = method->get_hash();
+		if(method->is_handle) {
+			hash ^= method->params[0]->type->get_hash();
+		}
 		map[hash] = method;
 	}
 	vector<Method*> res;
@@ -364,19 +376,15 @@ void Type::import(TypeName* p_name) {
 	Interface* p_iface = dynamic_cast<Interface*>(p_name->type);
 	if(p_type) {
 		import(p_type);
-		for(Base* param : p_name->tmpl) {
-			Type* p_param_type = dynamic_cast<Type*>(param);
-			TypeName* p_param_name = dynamic_cast<TypeName*>(param);
-			if(p_param_name) {
-				import(p_param_name);
-			} else {
-				import(p_param_type);
-			}
-		}
 	}
-	if(p_name->tmpl.size() && (!p_iface || p_iface->generic.empty())) {
-		error(p_name) << "is not a template" << endl;
-		FAIL();
+	for(Base* param : p_name->tmpl) {
+		TypeName* p_param_name = dynamic_cast<TypeName*>(param);
+		Type* p_param_type = dynamic_cast<Type*>(param);
+		if(p_param_name) {
+			import(p_param_name);
+		} else if(p_param_type) {
+			import(p_param_type);
+		}
 	}
 }
 
@@ -430,7 +438,12 @@ void Interface::compile() {
 				error(method) << "handle() method cannot be const" << endl;
 				FAIL();
 			}
+			if(!dynamic_cast<Class*>(method->params[0]->type)) {
+				error(method) << "handle() method can only take a class" << endl;
+				FAIL();
+			}
 			method->is_handle = true;
+			cout << this->name << " HANDLES " << method->params[0]->type->get_name() << endl;
 		}
 	}
 	all_methods = methods;
@@ -479,6 +492,10 @@ struct init_type_system {
 		add(new Integer("long", 8));
 		add(new Real("float", 4));
 		add(new Real("double", 8));
+		add(new Binary());
+		add(new String());
+		add(new Array());
+		add(new List());
 	}
 	void add(Base* type) {
 		INDEX[type->get_name()] = type;

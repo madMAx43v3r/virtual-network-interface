@@ -154,10 +154,17 @@ public:
 					ERROR("only object can implement");
 				}
 				read_token();
-				while(token != "{" && !end_of_file) {
-					p_object->implements.push_back(resolve<Interface>(token));
+				while(!end_of_file) {
+					p_object->implements.push_back(resolve<Object>(token));
 					cout << "  IMPLEMENTS " << token << endl;
 					read_token();
+					if(token == "{") {
+						break;
+					} else if(token == ",") {
+						read_token();
+					} else {
+						ERROR("expected , or {");
+					}
 				}
 			}
 			if(token != "{") {
@@ -226,10 +233,10 @@ public:
 					read_token();
 					int size = atoi(token.c_str());
 					if(size <= 0) {
-						ERROR("invalid array size");
+						ERROR("invalid vector size");
 					}
 					field = new Field();
-					Array* array = new Array();
+					Vector* array = new Vector();
 					array->type = resolve(type);
 					array->size = size;
 					field->type = array;
@@ -246,7 +253,7 @@ public:
 					if(read_token() != ";") {
 						ERROR("expected ; after field");
 					}
-					cout << "    FIELD " << type << " " << name << " ARRAY " << size << endl;
+					cout << "    FIELD " << type << " " << name << " VECTOR " << size << endl;
 				} else if(token == "(") {
 					method = new Method();
 					method->name = name;

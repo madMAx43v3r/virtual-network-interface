@@ -1,7 +1,5 @@
 package test;
 
-import vni.List;
-
 class TestType {
 	
 	TestValue val;

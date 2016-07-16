@@ -1,8 +1,0 @@
-package vni.info;
-
-class Class {
-	
-	String name;
-	List<Field> fields;
-	
-}

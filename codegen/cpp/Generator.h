@@ -261,6 +261,10 @@ public:
 		is_base_iface = false;
 		if(p_class && p_class->super) {
 			super = p_class->super->get_full_name();
+		} else if(p_iface && p_iface->super) {
+			super = p_iface->super->get_full_name();
+		} else if(p_object && p_object->super) {
+			super = p_object->super->get_full_name();
 		} else if(p_module && p_type->name != "Module") {
 			super = "vnl.Module";
 		} else if(p_object && p_type->name != "Object") {
@@ -444,6 +448,7 @@ public:
 			
 			namespace_begin();
 			if(is_base_value) {
+				out << "GlobalPool* global_pool = 0;" << endl << endl;
 				out << "vnl::Value* create(vnl::Hash32 hash) {@" << endl;
 				out << "switch(hash) {@" << endl;
 				for(Struct* sub : sub_classes) {
@@ -601,7 +606,7 @@ public:
 			out << "void " << method->name << "(";
 			echo_method_params(method);
 			out << ") {@" << endl;
-			out << "_out.putEntry(VNL_IO_CALL, " << method->params.size() << ");" << endl;
+			out << "_out.putEntry(" << (method->is_const ? "VNL_IO_CONST_CALL" : "VNL_IO_CALL") << ", " << method->params.size() << ");" << endl;
 			out << "_out.putHash(" << hash32_of(method) << ");" << endl;
 			for(Field* param : method->params) {
 				out << "vnl::write(_out, " << param->name << ");" << endl;
@@ -629,7 +634,7 @@ public:
 		string client_name = p_object->name + "Client";
 		string super;
 		if(p_object->super) {
-			super = p_object->super->name + "Client";
+			super = p_object->super->get_full_name() + "Client";
 		} else if(p_object->name != "Object") {
 			super = "vnl.ObjectClient";
 		} else {
@@ -638,13 +643,13 @@ public:
 		out << endl << endl;
 		out << "class " << client_name << " : public " << subs(super, ".", "::") << " {" << endl;
 		out << "public:@" << endl;
-		for(Method* method : p_object->all_methods) {
+		for(Method* method : p_object->methods) {
 			if(method->is_handle) {
 				continue;
 			}
 			echo_client_call(p_object, method);
 		}
-		for(Field* field : p_object->all_fields) {
+		for(Field* field : p_object->fields) {
 			Method method;
 			method.name = "set_" + field->name;
 			method.type = resolve("int");
@@ -666,11 +671,11 @@ public:
 			out << "& result_";
 		}
 		out << ") {@" << endl;
-		out << "_buf.reset();" << endl;
-		out << full(p_object) << "Base::Writer _wr(_out);" << endl;
+		out << "_buf.wrap(_data);" << endl;
+		out << "{ " << full(p_object) << "Base::Writer _wr(_out); ";
 		out << "_wr." << method->name << "(";
 		echo_method_args(method);
-		out << ");" << endl;
+		out << "); }" << endl;
 		out << "vnl::Packet* _pkt = _call();" << endl;
 		out << "if(_pkt) {@" << endl;
 		if(method->is_const) {

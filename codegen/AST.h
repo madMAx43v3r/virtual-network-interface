@@ -443,7 +443,6 @@ void Interface::compile() {
 				FAIL();
 			}
 			method->is_handle = true;
-			cout << this->name << " HANDLES " << method->params[0]->type->get_name() << endl;
 		}
 	}
 	all_methods = methods;
@@ -475,6 +474,11 @@ void Object::compile() {
 	}
 	for(Interface* iface : implements) {
 		all_methods.insert(all_methods.end(), iface->methods.begin(), iface->methods.end());
+	}
+	if(name != "Object") {
+		Object* base = resolve<Object>("vnl.Object");
+		all_fields.insert(all_fields.end(), base->fields.begin(), base->fields.end());
+		all_methods.insert(all_methods.end(), base->methods.begin(), base->methods.end());
 	}
 	all_methods = get_unique_methods(all_methods);
 	check_dup_fields(all_fields);

@@ -16,4 +16,6 @@ module Process {
 	void resume_log();
 	void set_log_filter(String filter);
 	
+	void shutdown();
+	
 }

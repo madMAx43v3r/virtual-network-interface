@@ -367,7 +367,7 @@ public:
 			out << "virtual void deserialize(vnl::io::TypeInput& in_, int size_);" << endl << endl;
 		}
 		if(p_module) {
-			out << "void serialize(vnl::io::TypeOutput& out_) const;" << endl << endl;
+			out << "virtual void serialize(vnl::io::TypeOutput& out_) const;" << endl << endl;
 		}
 		if(p_struct || p_iface) {
 			out << "virtual uint32_t vni_hash() const { return VNI_HASH; }" << endl;

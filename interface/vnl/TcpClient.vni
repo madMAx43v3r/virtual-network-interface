@@ -1,8 +1,0 @@
-package vnl;
-
-object TcpClient extends Uplink {
-	
-	String endpoint;
-	int port = 8616;
-	
-}

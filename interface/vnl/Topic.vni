@@ -1,8 +1,0 @@
-package vnl;
-
-class Topic {
-	
-	String domain;
-	String name;
-	
-}

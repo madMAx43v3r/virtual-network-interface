@@ -6,3 +6,7 @@ include_directories(../)
 
 add_executable(vnicppcodegen vnicppcodegen.cpp)
 
+INSTALL(TARGETS vnicppcodegen
+  RUNTIME DESTINATION bin
+)
+

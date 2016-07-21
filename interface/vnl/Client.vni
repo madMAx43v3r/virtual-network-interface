@@ -1,7 +1,0 @@
-package vnl;
-
-interface Client {
-	
-	void set_address(String domain, String topic);
-	
-}

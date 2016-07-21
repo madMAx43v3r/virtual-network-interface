@@ -30,6 +30,7 @@ class Generator : public Backend {
 public:
 	Generator() {
 		whitelist.insert("CMakeFiles");
+		whitelist.insert("libinterface.a");
 	}
 	
 	virtual void generate_all() {

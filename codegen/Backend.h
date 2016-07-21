@@ -49,7 +49,9 @@ public:
 		path = root + path;
 		
 		string mkdir = "mkdir -p " + path;
-		system(mkdir.c_str());
+		if(system(mkdir.c_str())) {
+			cout << "ERROR: " << mkdir << " failed!" << endl;
+		}
 		
 		string file_name = path + name;
 		files_written.insert(file_name);
@@ -121,7 +123,9 @@ public:
 						if(!res) {
 							cout << "DELETE " << file << endl;
 							string rm_cmd = "rm -r " + file;
-							system(rm_cmd.c_str());
+							if(system(rm_cmd.c_str())) {
+								cout << "ERROR: " << rm_cmd << " failed!" << endl;
+							}
 						} else {
 							count += res;
 						}

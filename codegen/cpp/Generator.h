@@ -108,7 +108,7 @@ public:
 		}
 	}
 	
-	void echo_type(Base* type) {
+	void echo_type(Base* type, bool constant = false) {
 		TYPE_TREE(type);
 		Bool* p_bool = dynamic_cast<Bool*>(type);
 		Integer* p_int = dynamic_cast<Integer*>(type);
@@ -120,7 +120,7 @@ public:
 		List* p_list = dynamic_cast<List*>(type);
 		TypeName* p_typename = dynamic_cast<TypeName*>(type);
 		if(p_typename) {
-			echo_type(p_typename->type);
+			echo_type(p_typename->type, constant);
 			if(p_typename->tmpl.size()) {
 				out << "<";
 				for(int i = 0; i < p_typename->tmpl.size(); ++i) {
@@ -162,7 +162,11 @@ public:
 		} else if(p_binary) {
 			out << "vnl::Binary";
 		} else if(p_string) {
-			out << "vnl::String";
+			if(constant) {
+				out << "char*";
+			} else {
+				out << "vnl::String";
+			}
 		} else if(p_array) {
 			out << "vnl::Array";
 		} else if(p_list) {
@@ -327,8 +331,12 @@ public:
 			}
 			for(Field* field : constants) {
 				out << "static const ";
-				echo_type(field);
-				out << " " << field->name << " = " << field->value << ";" << endl;
+				echo_type(field, true);
+				out << " " << field->name;
+				if(dynamic_cast<Primitive*>(field->type)) {
+					out << " = " << field->value;
+				}
+				out << ";" << endl;
 			}
 			out << endl;
 			
@@ -461,7 +469,7 @@ public:
 		}
 		
 		string scope = base_name;
-		string header = "\n";
+		string header = "";
 		if(is_template) {
 			scope += "<";
 			header += "template<";
@@ -478,6 +486,29 @@ public:
 			header += ">\n";
 		}
 		scope += "::";
+		
+		if(p_struct || p_iface) {
+			out << header << "const uint32_t " << scope << "VNI_HASH;" << endl;
+		}
+		if(p_struct || p_object) {
+			out << header << "const uint32_t " << scope << "NUM_FIELDS;" << endl;
+			vector<Field*> constants;
+			if(p_struct) {
+				constants = p_struct->constants;
+			} else if(p_object) {
+				constants = p_object->constants;
+			}
+			for(Field* field : constants) {
+				out << header << "const ";
+				echo_type(field, true);
+				out << " " << scope << field->name;
+				if(dynamic_cast<Primitive*>(field->type) == 0) {
+					out << " = " << field->value;
+				}
+				out << ";" << endl;
+			}
+		}
+		out << endl;
 		
 		if(p_struct) {
 			out << type_name << "* " << scope << "create() {@" << endl;
@@ -507,7 +538,7 @@ public:
 				out << "out_.putHash(" << hash32_of(field) << "); ";
 				out << "vnl::write(out_, " << field->name << ");" << endl;
 			}
-			out << "$}" << endl;
+			out << "$}" << endl << endl;
 			
 			out << header << "void " << scope << "deserialize(vnl::io::TypeInput& in_, int size_) {@" << endl;
 			out << "for(int i = 0; i < size_ && !in_.error(); ++i) {@" << endl;
@@ -517,12 +548,12 @@ public:
 				out << "case " << hash32_of(field) << ": vnl::read(in_, " << field->name << "); break;" << endl;
 			}
 			out << "default: in_.skip();" << endl;
-			out << "$}" << endl << "$}" << endl << "$}" << endl;
+			out << "$}" << endl << "$}" << endl << "$}" << endl << endl;
 		}
 		if(p_module) {
 			out << header << "void " << scope << "serialize(vnl::io::TypeOutput& out_) const {@" << endl;
 			out << "Writer wr_(out_, this);" << endl;
-			out << "$}" << endl;
+			out << "$}" << endl << endl;
 		}
 		
 		if(p_struct || p_object) {
@@ -533,7 +564,7 @@ public:
 				out << "case " << hash32_of(field) << ": return " << index++ << ";" << endl;
 			}
 			out << "default: return -1;" << endl;
-			out << "$}" << endl << "$}" << endl;
+			out << "$}" << endl << "$}" << endl << endl;
 			
 			out << header << "const char* " << scope << "field_name(int index_) const {@" << endl;
 			out << "switch(index_) {@" << endl;
@@ -545,13 +576,13 @@ public:
 			out << "$}" << endl << "$}" << endl << endl;
 			
 			out << header << "void " << scope << "get_field(int index_, vnl::String& str_) const {@" << endl;
-			out << "switch(index_) {@" << endl;
+			out << "switch(index_) {@" << endl << endl;
 			index = 0;
 			for(Field* field : all_fields) {
 				out << "case " << index++ << ": vnl::to_string(str_, " << field->name << "); break;" << endl;
 			}
 			out << "default: str_ << \"{}\";" << endl;
-			out << "$}" << endl << "$}" << endl;
+			out << "$}" << endl << "$}" << endl << endl;
 			
 			out << header << "void " << scope << "set_field(int index_, vnl::io::ByteInput& in_) {@" << endl;
 			out << "switch(index_) {@" << endl;
@@ -560,22 +591,22 @@ public:
 				out << "case " << index++ << ": vnl::from_string(in_, " << field->name << "); break;" << endl;
 			}
 			out << "default: break;" << endl;
-			out << "$}" << endl << "$}" << endl;
+			out << "$}" << endl << "$}" << endl << endl;
 		}
 		
 		if(p_iface) {
 			out << header << "bool " << scope << "vni_call(vnl::io::TypeInput& in_, uint32_t hash_, int num_args_) {@" << endl;
 			echo_call_switch(p_iface, false);
-			out << "return false;" << endl << "$}" << endl;
+			out << "return false;" << endl << "$}" << endl << endl;
 			out << header << "bool " << scope << "vni_const_call(vnl::io::TypeInput& in_, uint32_t hash_, int num_args_, vnl::io::TypeOutput& out_) {@" << endl;
 			echo_call_switch(p_iface, true);
-			out << "return false;" << endl << "$}" << endl;
+			out << "return false;" << endl << "$}" << endl << endl;
 		}
 		
 		if(p_module) {
 			out << header << "bool " << scope << "handle_switch(vnl::Value* sample_, vnl::Packet* packet_) {@" << endl;
 			echo_handle_switch(p_module);
-			out << "return false;" << endl << "$}" << endl;
+			out << "return false;" << endl << "$}" << endl << endl;
 		}
 		
 		if(!is_template) {

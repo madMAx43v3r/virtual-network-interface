@@ -17,6 +17,7 @@ int main(int argc, char** argv) {
 	
 	if(argc < 2) {
 		cout << "Usage: vnicppcodegen interface-dir ..." << endl;
+		exit(-1);
 	}
 	
 	Compiler<VNIParser> compiler;

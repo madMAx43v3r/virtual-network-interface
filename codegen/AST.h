@@ -322,7 +322,7 @@ static T* resolve(const string& ident) {
 	if(!res && IMPORT.count(ident)) {
 		res = resolve(IMPORT[ident]);
 	}
-	if(!res) {
+	if(!res && PACKAGE) {
 		res = PACKAGE->index[ident];
 	}
 	T* type = dynamic_cast<T*>(res);

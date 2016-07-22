@@ -28,7 +28,6 @@ public:
 			parse_dir(root);
 		}
 		
-		register_default();
 		cout << endl << "INDEX = {" << endl;
 		for(auto entry : INDEX) {
 			cout << "  " << entry.first << " = " << entry.second << endl;
@@ -48,13 +47,6 @@ public:
 	}
 	
 protected:
-	virtual void register_default() {
-		INDEX["Value"] = resolve("vnl.Value");
-		INDEX["Bool"] = resolve("vnl.Bool");
-		INDEX["Integer"] = resolve("vnl.Integer");
-		INDEX["Real"] = resolve("vnl.Real");
-	}
-	
 	void parse_dir(string path) {
 		cout << "DIR " << path << endl;
 		DIR* dir;

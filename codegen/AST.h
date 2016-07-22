@@ -206,7 +206,7 @@ public:
 	virtual uint64_t get_hash() {
 		CRC64 hash;
 		hash.update(name);
-		hash.update(params.size());
+		hash.update((uint64_t)params.size());
 		return hash.getValue();
 	}
 };

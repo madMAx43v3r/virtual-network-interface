@@ -323,6 +323,10 @@ public:
 			}
 			out << endl;
 			
+			if(p_iface) {
+				out << "typedef " << subs(super, ".", "::") << " Super;" << endl << endl;
+			}
+			
 			vector<Field*> constants;
 			if(p_struct) {
 				constants = p_struct->constants;

@@ -68,9 +68,7 @@ public:
 	
 	virtual string get_name() = 0;
 	
-	virtual uint64_t get_hash() {
-		return hash64(get_name());
-	}
+	virtual uint64_t get_hash() { return hash64(get_name()); }
 	
 	virtual void compile() {}
 	
@@ -238,6 +236,8 @@ public:
 	
 	virtual string get_name() { return name; }
 	virtual string get_full_name() { return package->name + "." + name; }
+	virtual uint64_t get_hash() { return hash64(get_full_name()); }
+	
 };
 
 

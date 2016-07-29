@@ -41,6 +41,11 @@ public:
 		
 		for(auto entry : INDEX) {
 			if(entry.second) {
+				entry.second->pre_compile();
+			}
+		}
+		for(auto entry : INDEX) {
+			if(entry.second) {
 				entry.second->compile();
 			}
 		}

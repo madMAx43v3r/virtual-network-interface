@@ -70,6 +70,7 @@ public:
 	
 	virtual uint64_t get_hash() { return hash64(get_name()); }
 	
+	virtual void pre_compile() {}
 	virtual void compile() {}
 	
 };
@@ -267,7 +268,11 @@ class Class : public Struct {
 public:
 	Class* super = 0;
 	
+	set<Class*> sub_types;
+	
 	Class(string name) : Struct(name) {}
+	
+	virtual void pre_compile();
 	
 	virtual void compile();
 	
@@ -297,10 +302,18 @@ public:
 	vector<Field*> constants;
 	vector<Field*> fields;
 	vector<Field*> all_fields;
+	set<Class*> all_handles;
 	
 	Object(string name) : Interface(name) {}
 	
 	virtual void compile();
+	
+	void add_handle_class(Class* p_class) {
+		all_handles.insert(p_class);
+		for(Class* sub : p_class->sub_types) {
+			all_handles.insert(sub);
+		}
+	}
 	
 };
 
@@ -398,6 +411,14 @@ void Struct::compile() {
 	check_dup_fields(all_fields);
 }
 
+void Class::pre_compile() {
+	Class* next = super;
+	while(next) {
+		next->sub_types.insert(this);
+		next = next->super;
+	}
+}
+
 void Class::compile() {
 	Struct::compile();
 	if(super) {
@@ -482,6 +503,14 @@ void Object::compile() {
 	}
 	all_methods = get_unique_methods(all_methods);
 	check_dup_fields(all_fields);
+	for(Method* method : all_methods) {
+		if(method->is_handle) {
+			Class* p_class = dynamic_cast<Class*>(method->params[0]->type);
+			if(p_class) {
+				add_handle_class(p_class);
+			}
+		}
+	}
 }
 
 

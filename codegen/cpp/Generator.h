@@ -586,7 +586,7 @@ public:
 			out << "$}" << endl << "$}" << endl << endl;
 			
 			out << header << "void " << scope << "get_field(int index_, vnl::String& str_) const {@" << endl;
-			out << "switch(index_) {@" << endl << endl;
+			out << "switch(index_) {@" << endl;
 			index = 0;
 			for(Field* field : all_fields) {
 				out << "case " << index++ << ": vnl::to_string(str_, " << field->name << "); break;" << endl;
@@ -645,7 +645,7 @@ public:
 			out << "_out.putEntry(VNL_IO_INTERFACE, VNL_IO_BEGIN);" << endl;
 			out << "_out.putHash(VNI_HASH);" << endl;
 			for(Field* field : p_object->all_fields) {
-				out << "set_" << field->name << "(obj_->" << field->name << ");" << endl;
+				out << field->name << "(obj_->" << field->name << ");" << endl;
 			}
 			out << "$}" << endl;
 		}
@@ -667,7 +667,7 @@ public:
 		}
 		if(p_object) {
 			for(Field* field : p_object->all_fields) {
-				out << "void set_" << field->name << "(";
+				out << "void " << field->name << "(";
 				echo_ref_to(field);
 				out << " value_) {@" << endl;
 				out << "_out.putEntry(VNL_IO_CALL, 1);" << endl;
@@ -703,7 +703,7 @@ public:
 		}
 		for(Field* field : p_object->fields) {
 			Method method;
-			method.name = "set_" + field->name;
+			method.name = field->name;
 			method.type = resolve("int");
 			method.is_const = false;
 			method.params.push_back(field);
@@ -785,15 +785,9 @@ public:
 	
 	void echo_handle_switch(Module* module) {
 		out << "switch(sample_->vni_hash()) {" << endl;
-		for(Method* method : module->all_methods) {
-			if(method->is_handle) {
-				Class* p_class = dynamic_cast<Class*>(method->params[0]->type);
-				if(p_class) {
-					string name = full(p_class);
-					out << "case " << name << "::VNI_HASH: ";
-					out << "handle(*((" << name << "*)sample_), *packet_); return true;" << endl;
-				}
-			}
+		for(Class* p_class : module->all_handles) {
+			out << "case " << hash32_of(p_class) << ": ";
+			out << "handle(*((" << full(p_class) << "*)sample_), *packet_); return true;" << endl;
 		}
 		out << "}" << endl;
 	}

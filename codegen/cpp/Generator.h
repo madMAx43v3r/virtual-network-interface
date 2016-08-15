@@ -418,10 +418,15 @@ public:
 				out << " " << method->name << "(";
 				echo_method_params(method, true);
 				if(method->is_handle) {
-					out << ", const vnl::Packet& packet";
+					out << ", const vnl::Packet& packet) { handle(" << method->params[0]->name << "); }" << endl;
+				} else {
+					out << ")" << (method->is_const ? " const" : "") << " = 0;" << endl;
 				}
-				out << ")" << (method->is_const ? " const" : "");
-				out << " = 0;" << endl;
+				if(method->is_handle) {
+					out << "virtual void handle(";
+					echo_method_params(method, true);
+					out << ") = 0;" << endl;
+				}
 			}
 			out << endl;
 			out << "virtual bool vni_call(vnl::io::TypeInput& in_, uint32_t hash_, int num_args_);" << endl;

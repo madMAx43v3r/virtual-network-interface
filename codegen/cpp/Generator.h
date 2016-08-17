@@ -672,7 +672,7 @@ public:
 		}
 		if(p_object) {
 			for(Field* field : p_object->all_fields) {
-				out << "void " << field->name << "(";
+				out << "void set_" << field->name << "(";
 				echo_ref_to(field);
 				out << " value_) {@" << endl;
 				out << "_out.putEntry(VNL_IO_CALL, 1);" << endl;
@@ -708,7 +708,7 @@ public:
 		}
 		for(Field* field : p_object->fields) {
 			Method method;
-			method.name = field->name;
+			method.name = std::string("set_") + field->name;
 			method.type = resolve("int");
 			method.is_const = false;
 			method.params.push_back(field);
@@ -729,10 +729,10 @@ public:
 		}
 		out << ") {@" << endl;
 		out << "_buf.wrap(_data);" << endl;
-		out << "{ " << full(p_object) << "Base::Writer _wr(_out); ";
+		out << "{@" << endl << full(p_object) << "Base::Writer _wr(_out);" << endl;
 		out << "_wr." << method->name << "(";
 		echo_method_args(method);
-		out << "); }" << endl;
+		out << ");" << endl << "$}" << endl;
 		out << "vnl::Packet* _pkt = _call();" << endl;
 		out << "if(_pkt) {@" << endl;
 		if(method->is_const) {

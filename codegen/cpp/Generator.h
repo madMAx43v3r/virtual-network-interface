@@ -351,6 +351,9 @@ public:
 				for(string& value : p_enum->values) {
 					out << "static const uint32_t " << value << " = " << hash32_of(value) << ";" << endl;
 				}
+				out << endl << "operator uint32_t() const {@" << endl << "return value;" << endl << "$}" << endl << endl;
+				out << p_enum->name << "& operator=(const uint32_t& val) {@" << endl;
+				out << "value = val;" << endl << "return *this;" << endl << "$}";
 			}
 			out << endl;
 			
@@ -425,7 +428,7 @@ public:
 				if(method->is_handle) {
 					out << "virtual void handle(";
 					echo_method_params(method, true);
-					out << ") = 0;" << endl;
+					out << ") {}" << endl;
 				}
 			}
 			out << endl;
@@ -625,7 +628,10 @@ public:
 		}
 		
 		if(p_enum) {
-			out << header << "void " << scope << "to_string_ex(vnl::String& str) const {@" << endl;
+			for(string& value : p_enum->values) {
+				out << "const uint32_t " << scope << value << ";" << endl;
+			}
+			out << endl << header << "void " << scope << "to_string_ex(vnl::String& str) const {@" << endl;
 			out << "switch(value) {@" << endl;
 			for(string& field : p_enum->values) {
 				out << "case " << hash32_of(field) << ": str << \"\\\"" << field << "\\\"\"; break;" << endl;
@@ -650,7 +656,7 @@ public:
 			out << "_out.putEntry(VNL_IO_INTERFACE, VNL_IO_BEGIN);" << endl;
 			out << "_out.putHash(VNI_HASH);" << endl;
 			for(Field* field : p_object->all_fields) {
-				out << field->name << "(obj_->" << field->name << ");" << endl;
+				out << "set_" << field->name << "(obj_->" << field->name << ");" << endl;
 			}
 			out << "$}" << endl;
 		}

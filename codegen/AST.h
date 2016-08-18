@@ -312,6 +312,7 @@ public:
 		all_handles.insert(p_class);
 		for(Class* sub : p_class->sub_types) {
 			all_handles.insert(sub);
+			import(sub);
 		}
 	}
 	

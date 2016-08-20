@@ -38,7 +38,12 @@ public:
 		out.str("");
 		out << "cmake_minimum_required(VERSION 2.4)" << endl << endl;
 		out << "include_directories(include/)" << endl << endl;
-		out << "ADD_LIBRARY(interface STATIC" << endl;
+		out << "ADD_LIBRARY(vni STATIC" << endl;
+		for(string file : source_files) {
+			out << "\t" << file << endl;
+		}
+		out << ")" << endl << endl;
+		out << "ADD_LIBRARY(vni_shared SHARED" << endl;
 		for(string file : source_files) {
 			out << "\t" << file << endl;
 		}

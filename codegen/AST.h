@@ -218,6 +218,8 @@ public:
 	
 	set<string> imports;
 	
+	vector<Field*> constants;
+	
 	Type(string name) : name(name) {
 		package = PACKAGE;
 		package->index[name] = this;
@@ -253,7 +255,8 @@ public:
 
 class Struct : public Type {
 public:
-	vector<Field*> constants;
+	Struct* super = 0;
+	
 	vector<Field*> fields;
 	vector<Field*> all_fields;
 	
@@ -284,6 +287,9 @@ public:
 	Interface* super = 0;
 	vector<string> generic;
 	
+	vector<Field*> fields;
+	vector<Field*> all_fields;
+	
 	vector<Method*> methods;
 	vector<Method*> all_methods;
 	
@@ -299,30 +305,19 @@ public:
 	Object* super = 0;
 	vector<Object*> implements;
 	
-	vector<Field*> constants;
-	vector<Field*> fields;
-	vector<Field*> all_fields;
-	set<Class*> all_handles;
+	set<Class*> handles;
 	
 	Object(string name) : Interface(name) {}
 	
 	virtual void compile();
 	
 	void add_handle_class(Class* p_class) {
-		all_handles.insert(p_class);
+		handles.insert(p_class);
 		for(Class* sub : p_class->sub_types) {
-			all_handles.insert(sub);
+			handles.insert(sub);
 			import(sub);
 		}
 	}
-	
-};
-
-
-class Module : public Object {
-public:
-	
-	Module(string name) : Object(name) {}
 	
 };
 
@@ -405,6 +400,9 @@ void Type::import(TypeName* p_name) {
 
 void Struct::compile() {
 	Type::compile();
+	if(!super && get_full_name() != "vnl.Value") {
+		super = resolve<Struct>("vnl.Value");
+	}
 	for(Field* field : fields) {
 		import(field);
 	}
@@ -438,6 +436,17 @@ void Interface::compile() {
 	if(super) {
 		import(super);
 	}
+	all_fields = fields;
+	all_methods = methods;
+	Interface* next = super;
+	while(next) {
+		all_fields.insert(all_fields.end(), next->fields.begin(), next->fields.end());
+		all_methods.insert(all_methods.end(), next->methods.begin(), next->methods.end());
+		next = next->super;
+	}
+	for(Field* field : fields) {
+		import(field);
+	}
 	for(Method* method : methods) {
 		import(method);
 		for(Field* param : method->params) {
@@ -451,7 +460,38 @@ void Interface::compile() {
 			error(method) << "non-const method must return void" << endl;
 			FAIL();
 		}
-		if(method->name == "handle") {
+	}
+	check_dup_fields(all_fields);
+	all_methods = get_unique_methods(all_methods);
+}
+
+void Object::compile() {
+	Interface::compile();
+	if(!super && get_full_name() != "vnl.Object") {
+		super = resolve<Object>("vnl.Object");
+	}
+	if(super) {
+		import(super);
+	}
+	Object* next = super;
+	while(next) {
+		for(Interface* iface : next->implements) {
+			all_methods.insert(all_methods.end(), iface->methods.begin(), iface->methods.end());
+		}
+		next = next->super;
+	}
+	for(Interface* iface : implements) {
+		all_methods.insert(all_methods.end(), iface->methods.begin(), iface->methods.end());
+	}
+	if(get_full_name() != "vnl.Object") {
+		Object* base = resolve<Object>("vnl.Object");
+		all_fields.insert(all_fields.end(), base->fields.begin(), base->fields.end());
+		all_methods.insert(all_methods.end(), base->methods.begin(), base->methods.end());
+	}
+	all_methods = get_unique_methods(all_methods);
+	check_dup_fields(all_fields);
+	for(Method* method : methods) {
+		if(method->is_handle) {
 			if(method->params.size() != 1) {
 				error(method) << "handle() method must have one parameter" << endl;
 				FAIL();
@@ -464,48 +504,6 @@ void Interface::compile() {
 				error(method) << "handle() method can only take a class" << endl;
 				FAIL();
 			}
-			method->is_handle = true;
-		}
-	}
-	all_methods = methods;
-	Interface* next = super;
-	while(next) {
-		all_methods.insert(all_methods.end(), next->methods.begin(), next->methods.end());
-		next = next->super;
-	}
-	all_methods = get_unique_methods(all_methods);
-}
-
-void Object::compile() {
-	Interface::compile();
-	if(super) {
-		import(super);
-	}
-	for(Field* field : fields) {
-		import(field);
-	}
-	all_fields = fields;
-	Object* next = super;
-	while(next) {
-		all_fields.insert(all_fields.end(), next->fields.begin(), next->fields.end());
-		all_methods.insert(all_methods.end(), next->methods.begin(), next->methods.end());
-		for(Interface* iface : next->implements) {
-			all_methods.insert(all_methods.end(), iface->methods.begin(), iface->methods.end());
-		}
-		next = next->super;
-	}
-	for(Interface* iface : implements) {
-		all_methods.insert(all_methods.end(), iface->methods.begin(), iface->methods.end());
-	}
-	if(name != "Object") {
-		Object* base = resolve<Object>("vnl.Object");
-		all_fields.insert(all_fields.end(), base->fields.begin(), base->fields.end());
-		all_methods.insert(all_methods.end(), base->methods.begin(), base->methods.end());
-	}
-	all_methods = get_unique_methods(all_methods);
-	check_dup_fields(all_fields);
-	for(Method* method : all_methods) {
-		if(method->is_handle) {
 			Class* p_class = dynamic_cast<Class*>(method->params[0]->type);
 			if(p_class) {
 				add_handle_class(p_class);

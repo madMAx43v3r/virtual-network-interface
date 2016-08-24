@@ -54,9 +54,6 @@ public:
 			} else if(keyword == "object") {
 				base = new Object(name);
 				cout << "  OBJECT " << name << endl;
-			} else if(keyword == "module") {
-				base = new Module(name);
-				cout << "  MODULE " << name << endl;
 			} else {
 				ERROR("expected type definition");
 			}
@@ -79,7 +76,6 @@ public:
 			Class* p_class = 0;
 			Interface* p_interface = 0;
 			Object* p_object = 0;
-			Module* p_module = 0;
 			if(keyword == "enum") {
 				p_enum = resolve<Enum>(full_name);
 				cout << "  ENUM " << name << endl;
@@ -95,12 +91,6 @@ public:
 			} else if(keyword == "object") {
 				p_object = resolve<Object>(full_name);
 				cout << "  OBJECT " << name << endl;
-			} else if(keyword == "module") {
-				p_module = resolve<Module>(full_name);
-				cout << "  MODULE " << name << endl;
-			}
-			if(p_module) {
-				p_object = p_module;
 			}
 			if(p_object) {
 				p_interface = p_object;
@@ -138,9 +128,7 @@ public:
 				}
 				string super = read_token();
 				cout << "  EXTENDS " << super << endl;
-				if(p_module) {
-					p_module->super = resolve<Module>(super);
-				} else if(p_object) {
+				if(p_object) {
 					p_object->super = resolve<Object>(super);
 				} else if(p_interface) {
 					p_interface->super = resolve<Interface>(super);
@@ -196,8 +184,8 @@ public:
 					field->type = resolve(type);
 					if(p_struct) {
 						p_struct->fields.push_back(field);
-					} else if(p_object) {
-						p_object->fields.push_back(field);
+					} else if(p_interface) {
+						p_interface->fields.push_back(field);
 					} else {
 						ERROR("cannot have fields here");
 					}
@@ -210,8 +198,8 @@ public:
 					if(is_const) {
 						if(p_struct) {
 							p_struct->constants.push_back(field);
-						} else if(p_object) {
-							p_object->constants.push_back(field);
+						} else if(p_interface) {
+							p_interface->constants.push_back(field);
 						} else {
 							ERROR("cannot have fields here");
 						}
@@ -219,8 +207,8 @@ public:
 					} else {
 						if(p_struct) {
 							p_struct->fields.push_back(field);
-						} else if(p_object) {
-							p_object->fields.push_back(field);
+						} else if(p_interface) {
+							p_interface->fields.push_back(field);
 						} else {
 							ERROR("cannot have fields here");
 						}
@@ -242,8 +230,8 @@ public:
 					field->type = array;
 					if(p_struct) {
 						p_struct->fields.push_back(field);
-					} else if(p_object) {
-						p_object->fields.push_back(field);
+					} else if(p_interface) {
+						p_interface->fields.push_back(field);
 					} else {
 						ERROR("cannot have fields here");
 					}
@@ -259,6 +247,7 @@ public:
 					method->name = name;
 					method->type = resolve(type);
 					method->tmpl = tmpl_params;
+					method->is_handle = method->name == "handle";
 					read_token();
 					cout << "    METHOD " << type << " " << name;
 					while(token != ")" && !end_of_file) {

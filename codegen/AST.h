@@ -52,7 +52,6 @@ std::ostream& error() {
 }
 
 
-
 class Base {
 public:
 	string file;
@@ -375,6 +374,22 @@ vector<Method*> get_unique_methods(vector<Method*>& methods) {
 	return res;
 }
 
+template<typename T>
+void gather_fields(T* next, vector<Field*>& vec) {
+	if(next) {
+		gather_fields(next->super, vec);
+		vec.insert(vec.end(), next->fields.begin(), next->fields.end());
+	}
+}
+
+template<typename T>
+void gather_methods(T* next, vector<Method*>& vec) {
+	if(next) {
+		gather_methods(next->super, vec);
+		vec.insert(vec.end(), next->methods.begin(), next->methods.end());
+	}
+}
+
 
 void Type::import(Type* p_type) {
 	imports.insert(p_type->package->name + "." + p_type->name);
@@ -406,7 +421,7 @@ void Struct::compile() {
 	for(Field* field : fields) {
 		import(field);
 	}
-	all_fields = fields;
+	gather_fields(this, all_fields);
 	check_dup_fields(all_fields);
 }
 
@@ -420,14 +435,14 @@ void Class::pre_compile() {
 
 void Class::compile() {
 	Struct::compile();
+	if(!super && get_full_name() != "vnl.Value") {
+		super = resolve<Class>("vnl.Value");
+	}
 	if(super) {
 		import(super);
 	}
-	Class* next = super;
-	while(next) {
-		all_fields.insert(all_fields.end(), next->fields.begin(), next->fields.end());
-		next = next->super;
-	}
+	all_fields.clear();
+	gather_fields(this, all_fields);
 	check_dup_fields(all_fields);
 }
 
@@ -435,14 +450,6 @@ void Interface::compile() {
 	Type::compile();
 	if(super) {
 		import(super);
-	}
-	all_fields = fields;
-	all_methods = methods;
-	Interface* next = super;
-	while(next) {
-		all_fields.insert(all_fields.end(), next->fields.begin(), next->fields.end());
-		all_methods.insert(all_methods.end(), next->methods.begin(), next->methods.end());
-		next = next->super;
 	}
 	for(Field* field : fields) {
 		import(field);
@@ -461,6 +468,8 @@ void Interface::compile() {
 			FAIL();
 		}
 	}
+	gather_fields(this, all_fields);
+	gather_methods(this, all_methods);
 	check_dup_fields(all_fields);
 	all_methods = get_unique_methods(all_methods);
 }
@@ -473,6 +482,10 @@ void Object::compile() {
 	if(super) {
 		import(super);
 	}
+	all_fields.clear();
+	all_methods.clear();
+	gather_fields(this, all_fields);
+	gather_methods(this, all_methods);
 	Object* next = super;
 	while(next) {
 		for(Interface* iface : next->implements) {
@@ -483,13 +496,8 @@ void Object::compile() {
 	for(Interface* iface : implements) {
 		all_methods.insert(all_methods.end(), iface->methods.begin(), iface->methods.end());
 	}
-	if(get_full_name() != "vnl.Object") {
-		Object* base = resolve<Object>("vnl.Object");
-		all_fields.insert(all_fields.end(), base->fields.begin(), base->fields.end());
-		all_methods.insert(all_methods.end(), base->methods.begin(), base->methods.end());
-	}
-	all_methods = get_unique_methods(all_methods);
 	check_dup_fields(all_fields);
+	all_methods = get_unique_methods(all_methods);
 	for(Method* method : methods) {
 		if(method->is_handle) {
 			if(method->params.size() != 1) {
@@ -514,27 +522,25 @@ void Object::compile() {
 
 
 
-struct init_type_system {
-	init_type_system() {
-		add(new Void());
-		add(new Bool());
-		add(new Integer("char", 1));
-		add(new Integer("short", 2));
-		add(new Integer("int", 4));
-		add(new Integer("long", 8));
-		add(new Real("float", 4));
-		add(new Real("double", 8));
-		add(new Binary());
-		add(new String());
-		add(new Array());
-		add(new List());
-	}
-	void add(Base* type) {
-		INDEX[type->get_name()] = type;
-	}
-};
+void add_type(Base* type) {
+	INDEX[type->get_name()] = type;
+}
 
-static init_type_system init_type_system_;
+void init_type_system() {
+	add_type(new Void());
+	add_type(new Bool());
+	add_type(new Integer("char", 1));
+	add_type(new Integer("short", 2));
+	add_type(new Integer("int", 4));
+	add_type(new Integer("long", 8));
+	add_type(new Real("float", 4));
+	add_type(new Real("double", 8));
+	add_type(new Binary());
+	add_type(new String());
+	add_type(new Array());
+	add_type(new List());
+}
+
 
 
 

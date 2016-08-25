@@ -20,6 +20,8 @@ int main(int argc, char** argv) {
 		exit(-1);
 	}
 	
+	init_type_system();
+	
 	Compiler<VNIParser> compiler;
 	for(int i = 1; i < argc; ++i) {
 		compiler.root_dirs.push_back(argv[i]);

@@ -29,7 +29,8 @@ class Generator : public Backend {
 public:
 	Generator() {
 		whitelist.insert("CMakeFiles");
-		whitelist.insert("libinterface.a");
+		whitelist.insert("libvni.a");
+		whitelist.insert("libvni_shared.so");
 	}
 	
 	virtual void generate_all() {
@@ -281,8 +282,8 @@ public:
 		} else if(p_iface && p_type->get_full_name() != "vnl.Interface") {
 			super = "vnl.Interface";
 			is_base_iface = true;
-		} else if(p_struct && p_type->get_full_name() != "vnl.Value") {
-			super = "vnl.Value";
+		} else if(p_struct && p_struct->super) {
+			super = p_struct->super->get_full_name();
 		} else if(p_enum) {
 			super = "vnl.Enum";
 			is_base_enum = true;

@@ -702,10 +702,10 @@ public:
 		Object* p_object = dynamic_cast<Object*>(p_iface);
 		string client_name = p_iface->name + "Client";
 		string super;
-		if(p_iface->super) {
+		if(p_object && p_object->super) {
+			super = p_object->super->get_full_name() + "Client";
+		} else if(p_iface && p_iface->super) {
 			super = p_iface->super->get_full_name() + "Client";
-		} else if(p_object && p_object->get_full_name() != "vnl.Object") {
-			super = "vnl.ObjectClient";
 		} else {
 			super = "vnl.Client";
 		}

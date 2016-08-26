@@ -159,10 +159,12 @@ public:
 				ERROR("expeced {");
 			}
 			// type body loop
+			bool end_of_type = false;
 			while(!end_of_file) {
 				read_token();
 				if(token == "}") {
 					read_token();
+					end_of_type = true;
 					break;
 				}
 				
@@ -294,6 +296,10 @@ public:
 				}
 				
 			} // type body loop
+			
+			if(!end_of_type) {
+				ERROR("expected } before end of file");
+			}
 			
 		} // file loop
 		

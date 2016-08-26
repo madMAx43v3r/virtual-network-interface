@@ -20,7 +20,7 @@
 
 #define FAIL() { cout << endl; assert(false); }
 
-#define ERROR(msg) { error() << #msg << endl << endl; assert(false); exit(-1); }
+#define ERROR(msg) { error() << msg << endl << endl; assert(false); exit(-1); }
 
 using namespace std;
 

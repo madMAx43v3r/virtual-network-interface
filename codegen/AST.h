@@ -261,6 +261,7 @@ public:
 	
 	Struct(string name) : Type(name) {}
 	
+	virtual void pre_compile();
 	virtual void compile();
 	
 };
@@ -275,7 +276,6 @@ public:
 	Class(string name) : Struct(name) {}
 	
 	virtual void pre_compile();
-	
 	virtual void compile();
 	
 };
@@ -308,6 +308,7 @@ public:
 	
 	Object(string name) : Interface(name) {}
 	
+	virtual void pre_compile();
 	virtual void compile();
 	
 	void add_handle_class(Class* p_class) {
@@ -413,11 +414,14 @@ void Type::import(TypeName* p_name) {
 }
 
 
-void Struct::compile() {
-	Type::compile();
+void Struct::pre_compile() {
 	if(!super && get_full_name() != "vnl.Value") {
 		super = resolve<Struct>("vnl.Value");
 	}
+}
+
+void Struct::compile() {
+	Type::compile();
 	for(Field* field : fields) {
 		import(field);
 	}
@@ -425,7 +429,11 @@ void Struct::compile() {
 	check_dup_fields(all_fields);
 }
 
+
 void Class::pre_compile() {
+	if(!super && get_full_name() != "vnl.Value") {
+		super = resolve<Class>("vnl.Value");
+	}
 	Class* next = super;
 	while(next) {
 		next->sub_types.insert(this);
@@ -435,9 +443,6 @@ void Class::pre_compile() {
 
 void Class::compile() {
 	Struct::compile();
-	if(!super && get_full_name() != "vnl.Value") {
-		super = resolve<Class>("vnl.Value");
-	}
 	if(super) {
 		import(super);
 	}
@@ -445,6 +450,7 @@ void Class::compile() {
 	gather_fields(this, all_fields);
 	check_dup_fields(all_fields);
 }
+
 
 void Interface::compile() {
 	Type::compile();
@@ -474,11 +480,15 @@ void Interface::compile() {
 	all_methods = get_unique_methods(all_methods);
 }
 
-void Object::compile() {
-	Interface::compile();
+
+void Object::pre_compile() {
 	if(!super && get_full_name() != "vnl.Object") {
 		super = resolve<Object>("vnl.Object");
 	}
+}
+
+void Object::compile() {
+	Interface::compile();
 	if(super) {
 		import(super);
 	}

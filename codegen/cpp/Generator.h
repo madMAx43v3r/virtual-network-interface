@@ -712,6 +712,8 @@ public:
 		out << endl << endl;
 		out << "class " << client_name << " : public " << subs(super, ".", "::") << " {" << endl;
 		out << "public:@" << endl;
+		out << client_name << "& operator=(const vnl::Address& addr) {@" << endl;
+		out << "set_address(addr);" << endl << "return *this;" << endl << "$}" << endl;
 		for(Method* method : p_iface->methods) {
 			if(method->is_handle) {
 				continue;

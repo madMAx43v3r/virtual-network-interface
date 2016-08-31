@@ -393,9 +393,6 @@ public:
 			out << "virtual void serialize(vnl::io::TypeOutput& _out) const;" << endl;
 			out << "virtual void deserialize(vnl::io::TypeInput& _in, int size_);" << endl << endl;
 		}
-		if(p_iface) {
-			out << "virtual void serialize(vnl::io::TypeOutput& _out) const;" << endl << endl;
-		}
 		if(p_enum || p_struct || p_iface) {
 			out << "virtual uint32_t vni_hash() const { return VNI_HASH; }" << endl;
 			out << "virtual const char* type_name() const { return \"" << p_type->get_full_name() << "\"; }" << endl << endl;
@@ -570,11 +567,6 @@ public:
 			}
 			out << "default: _in.skip();" << endl;
 			out << "$}" << endl << "$}" << endl << "$}" << endl << endl;
-		}
-		if(p_iface) {
-			out << header << "void " << scope << "serialize(vnl::io::TypeOutput& _out) const {@" << endl;
-			out << "Writer wr_(_out, this);" << endl;
-			out << "$}" << endl << endl;
 		}
 		
 		if(p_struct || p_iface) {

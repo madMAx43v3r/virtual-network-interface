@@ -373,9 +373,9 @@ public:
 			if(p_object) {
 				out << base_name << "(const vnl::String& domain_, const vnl::String& topic_)" << endl;
 				if(p_object->get_full_name() != "vnl.Object") {
-					out << "\t:\t" << subs(super, ".", "::") << "(domain_, topic_)" << endl << " {@" << endl;
+					out << "\t:\t" << subs(super, ".", "::") << "(domain_, topic_)" << endl << "{@" << endl;
 				} else {
-					out << " {@" << endl;
+					out << "{@" << endl;
 				}
 			} else {
 				out << base_name << "() {@" << endl;

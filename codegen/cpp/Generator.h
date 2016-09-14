@@ -370,9 +370,13 @@ public:
 			}
 			
 			out << endl;
-			if(p_object && p_object->get_full_name() != "vnl.Object") {
+			if(p_object) {
 				out << base_name << "(const vnl::String& domain_, const vnl::String& topic_)" << endl;
-				out << "\t:\t" << subs(super, ".", "::") << "(domain_, topic_)" << endl << "{@" << endl;
+				if(p_object->get_full_name() != "vnl.Object") {
+					out << "\t:\t" << subs(super, ".", "::") << "(domain_, topic_)" << endl << " {@" << endl;
+				} else {
+					out << " {@" << endl;
+				}
 			} else {
 				out << base_name << "() {@" << endl;
 			}
@@ -381,6 +385,11 @@ public:
 					out << field->name << " = " << field->value << ";" << endl;
 				} else if(dynamic_cast<Primitive*>(field->type)) {
 					out << field->name << " = 0;" << endl;
+				}
+			}
+			if(p_object) {
+				for(Field* field : fields) {
+					out << "vnl::read_config(domain_, topic_, \"" << field->name << "\", " << field->name << ");" << endl;
 				}
 			}
 			out << "$}" << endl << endl;
@@ -405,7 +414,7 @@ public:
 			out << "virtual int field_index(vnl::Hash32 _hash) const;" << endl;
 			out << "virtual const char* field_name(int _index) const;" << endl;
 			out << "virtual void get_field(int _index, vnl::String& _str) const;" << endl;
-			out << "virtual void set_field(int _index, vnl::io::ByteInput& _in);" << endl << endl;
+			out << "virtual void set_field(int _index, const vnl::String& _str);" << endl << endl;
 		}
 		if(p_enum) {
 			out << "virtual void to_string_ex(vnl::String& str) const;" << endl;
@@ -597,11 +606,11 @@ public:
 			out << "default: _str << \"{}\";" << endl;
 			out << "$}" << endl << "$}" << endl << endl;
 			
-			out << header << "void " << scope << "set_field(int _index, vnl::io::ByteInput& _in) {@" << endl;
+			out << header << "void " << scope << "set_field(int _index, const vnl::String& _str) {@" << endl;
 			out << "switch(_index) {@" << endl;
 			index = 0;
 			for(Field* field : all_fields) {
-				out << "case " << index++ << ": vnl::from_string(_in, " << field->name << "); break;" << endl;
+				out << "case " << index++ << ": vnl::from_string(_str, " << field->name << "); break;" << endl;
 			}
 			out << "$}" << endl << "$}" << endl << endl;
 		}

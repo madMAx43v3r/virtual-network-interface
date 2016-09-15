@@ -27,6 +27,8 @@ namespace cpp {
 
 class Generator : public Backend {
 public:
+	bool make_shared = false;
+	
 	Generator() {
 		whitelist.insert("CMakeFiles");
 		whitelist.insert("libvni.a");
@@ -38,16 +40,15 @@ public:
 		out.str("");
 		out << "cmake_minimum_required(VERSION 2.4)" << endl << endl;
 		out << "include_directories(include/)" << endl << endl;
-		out << "ADD_LIBRARY(vni STATIC" << endl;
+		if(make_shared) {
+			out << "ADD_LIBRARY(vni_shared SHARED" << endl;
+		} else {
+			out << "ADD_LIBRARY(vni STATIC" << endl;
+		}
 		for(string file : source_files) {
 			out << "\t" << file << endl;
 		}
 		out << ")" << endl << endl;
-		out << "ADD_LIBRARY(vni_shared SHARED" << endl;
-		for(string file : source_files) {
-			out << "\t" << file << endl;
-		}
-		out << ")" << endl;
 		update("", "CMakeLists.txt", out.str());
 	}
 	

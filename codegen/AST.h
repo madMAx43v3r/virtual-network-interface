@@ -219,6 +219,8 @@ public:
 	
 	vector<Field*> constants;
 	
+	bool generate = true;
+	
 	Type(string name) : name(name) {
 		package = PACKAGE;
 		package->index[name] = this;
@@ -549,6 +551,18 @@ void init_type_system() {
 	add_type(new String());
 	add_type(new Array());
 	add_type(new List());
+	PACKAGE = Package::get("vnl");
+	{
+		Interface* type = new Interface("Hash32");
+		type->generate = false;
+		add_type(type);
+	}
+	{
+		Interface* type = new Interface("Hash64");
+		type->generate = false;
+		add_type(type);
+	}
+	PACKAGE = 0;
 }
 
 

@@ -37,7 +37,7 @@ public:
 	virtual void generate_all() {
 		for(auto entry : INDEX) {
 			Type* p_type = dynamic_cast<Type*>(entry.second);
-			if(p_type) {
+			if(p_type && p_type->generate) {
 				generate(p_type);
 			}
 		}

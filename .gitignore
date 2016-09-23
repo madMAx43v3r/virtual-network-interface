@@ -30,3 +30,6 @@
 .project
 .cproject
 
+/tmp
+/installs
+

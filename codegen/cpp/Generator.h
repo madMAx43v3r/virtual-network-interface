@@ -396,7 +396,7 @@ public:
 			out << "virtual " << type_name << "* clone() const;" << endl;
 			out << "virtual void destroy();" << endl << endl;
 			out << "virtual void serialize(vnl::io::TypeOutput& _out) const;" << endl;
-			out << "virtual void deserialize(vnl::io::TypeInput& _in, int size_);" << endl << endl;
+			out << "virtual void deserialize(vnl::io::TypeInput& _in, int _size);" << endl << endl;
 		}
 		if(p_enum || p_struct || p_iface) {
 			out << "virtual uint32_t vni_hash() const { return VNI_HASH; }" << endl;
@@ -467,13 +467,13 @@ public:
 			out << endl << "#include <" << subs(p_type->get_full_name(), ".", "/") << (p_iface ? "Support" : "") << ".hxx" << ">" << endl;
 			out << "#include <vnl/Type.hxx>" << endl;
 			
-			set<Struct*> sub_classes;
-			if(is_base_value) {
-				for(auto entry : INDEX) {
-					Struct* p_struct = dynamic_cast<Struct*>(entry.second);
-					if(p_struct && !dynamic_cast<Interface*>(entry.second)) {
-						out << "#include <" << subs(p_struct->get_full_name(), ".", "/") << ".hxx>" << endl;
-						sub_classes.insert(p_struct);
+			set<Class*> sub_classes;
+			if(is_base_value && p_class) {
+				sub_classes = p_class->sub_types;
+				for(Class* sub : sub_classes) {
+					if(sub) {
+						out << "#include <" << subs(sub->get_full_name(), ".", "/") << ".hxx>" << endl;
+						sub_classes.insert(sub);
 					}
 				}
 			}
@@ -483,11 +483,18 @@ public:
 				out << "GlobalPool* global_pool = 0;" << endl << endl;
 				out << "vnl::Value* create(vnl::Hash32 hash) {@" << endl;
 				out << "switch(hash) {@" << endl;
-				for(Struct* sub : sub_classes) {
+				for(Class* sub : sub_classes) {
 					out << "case " << hash32_of(sub) << ": return vnl::create<" << full(sub) << ">();" << endl;
 				}
-				out << "default: return vnl::create<vnl::BinaryValue>();" << endl;
+				out << "default: return 0;" << endl;
 				out << "$}" << endl << "$}" << endl << endl;
+				
+				out << "vnl::Array<vnl::String> get_class_names() {@" << endl;
+				out << "vnl::Array<vnl::String> res;" << endl;
+				for(Class* sub : sub_classes) {
+					out << "res.push_back(\"" << sub->get_full_name() << "\");" << endl;
+				}
+				out << "return res;" << endl << "$}" << endl << endl;
 			}
 		}
 		
@@ -512,8 +519,6 @@ public:
 		
 		if(p_struct || p_iface) {
 			out << header << "const uint32_t " << scope << "VNI_HASH;" << endl;
-		}
-		if(p_struct || p_iface) {
 			out << header << "const uint32_t " << scope << "NUM_FIELDS;" << endl;
 			vector<Field*> constants;
 			if(p_struct) {
@@ -563,8 +568,8 @@ public:
 			}
 			out << "$}" << endl << endl;
 			
-			out << header << "void " << scope << "deserialize(vnl::io::TypeInput& _in, int size_) {@" << endl;
-			out << "for(int i = 0; i < size_ && !_in.error(); ++i) {@" << endl;
+			out << header << "void " << scope << "deserialize(vnl::io::TypeInput& _in, int _size) {@" << endl;
+			out << "for(int i = 0; i < _size && !_in.error(); ++i) {@" << endl;
 			out << "uint32_t _hash = 0;" << endl << "_in.getHash(_hash);" << endl;
 			out << "switch(_hash) {@" << endl;
 			for(Field* field : all_fields) {

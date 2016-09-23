@@ -57,6 +57,8 @@ public:
 	string file;
 	int line;
 	
+	bool generate = true;
+	
 	Base() {
 		file = CURR_FILE;
 		line = CURR_LINE;
@@ -219,12 +221,10 @@ public:
 	
 	vector<Field*> constants;
 	
-	bool generate = true;
-	
 	Type(string name) : name(name) {
 		package = PACKAGE;
 		package->index[name] = this;
-		string full = package->name + "." + name;
+		string full = get_full_name();
 		if(INDEX.count(full)) {
 			error() << "duplicate type: " << full << endl;
 			FAIL();
@@ -538,6 +538,10 @@ void add_type(Base* type) {
 	INDEX[type->get_name()] = type;
 }
 
+void add_type_full(Type* type) {
+	INDEX[type->get_full_name()] = type;
+}
+
 void init_type_system() {
 	add_type(new Void());
 	add_type(new Bool());
@@ -551,22 +555,7 @@ void init_type_system() {
 	add_type(new String());
 	add_type(new Array());
 	add_type(new List());
-	PACKAGE = Package::get("vnl");
-	{
-		Interface* type = new Interface("Hash32");
-		type->generate = false;
-		add_type(type);
-	}
-	{
-		Interface* type = new Interface("Hash64");
-		type->generate = false;
-		add_type(type);
-	}
-	PACKAGE = 0;
 }
-
-
-
 
 
 

@@ -155,6 +155,11 @@ public:
 					}
 				}
 			}
+			if(token == ";") {
+				p_base->generate = false;
+				read_token();
+				continue;
+			}
 			if(token != "{") {
 				ERROR("expeced {");
 			}
@@ -341,7 +346,7 @@ public:
 			if(token == "{") {
 				break;
 			} else if(token == ";") {
-				ERROR("expected type definition");
+				return;
 			}
 		}
 		int stack = 1;

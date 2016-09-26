@@ -147,7 +147,7 @@ public:
 				out << " >";
 			}
 		} else if(p_object) {
-			out << full(p_object) << "Client";
+			out << "vnl::Address";
 		} else if(p_iface) {
 			out << full(p_iface);
 		} else if(p_struct) {

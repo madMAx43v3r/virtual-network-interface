@@ -439,7 +439,7 @@ public:
 			out << "virtual bool vni_call(vnl::io::TypeInput& _in, uint32_t _hash, int _num_args);" << endl;
 			out << "virtual bool vni_const_call(vnl::io::TypeInput& _in, uint32_t _hash, int _num_args, vnl::io::TypeOutput& _out);" << endl;
 			if(p_object) {
-				out << "virtual bool handle_switch(vnl::Value* sample_, vnl::Packet* packet_);" << endl;
+				out << "virtual bool handle_switch(vnl::Value* _sample, vnl::Packet* _packet);" << endl;
 			}
 			
 			out << endl << "template<class W>" << endl << "void write_fields(W& _writer) const {@" << endl;
@@ -626,9 +626,9 @@ public:
 		}
 		
 		if(p_object) {
-			out << header << "bool " << scope << "handle_switch(vnl::Value* sample_, vnl::Packet* packet_) {@" << endl;
+			out << header << "bool " << scope << "handle_switch(vnl::Value* _sample, vnl::Packet* _packet) {@" << endl;
 			echo_handle_switch(p_object);
-			out << "return Super::handle_switch(sample_, packet_);" << endl << "$}" << endl << endl;
+			out << "return Super::handle_switch(_sample, _packet);" << endl << "$}" << endl << endl;
 		}
 		
 		if(p_enum) {
@@ -845,10 +845,10 @@ public:
 	}
 	
 	void echo_handle_switch(Object* module) {
-		out << "switch(sample_->vni_hash()) {" << endl;
+		out << "switch(_sample->vni_hash()) {" << endl;
 		for(Class* p_class : module->handles) {
 			out << "case " << hash32_of(p_class) << ": ";
-			out << "handle(*((" << full(p_class) << "*)sample_), *packet_); return true;" << endl;
+			out << "handle(*((" << full(p_class) << "*)_sample), *_packet); return true;" << endl;
 		}
 		out << "}" << endl;
 	}

@@ -143,7 +143,7 @@ public:
 				}
 				read_token();
 				while(!end_of_file) {
-					p_object->implements.push_back(resolve<Object>(token));
+					p_object->implements.push_back(resolve<Interface>(token));
 					cout << "  IMPLEMENTS " << token << endl;
 					read_token();
 					if(token == "{") {

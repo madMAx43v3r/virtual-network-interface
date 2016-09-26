@@ -292,7 +292,6 @@ public:
 	vector<Field*> all_fields;
 	
 	vector<Method*> methods;
-	vector<Method*> all_methods;
 	
 	Interface(string name) : Type(name) {}
 	
@@ -304,7 +303,7 @@ public:
 class Object : public Interface {
 public:
 	Object* super = 0;
-	vector<Object*> implements;
+	vector<Interface*> implements;
 	
 	set<Class*> handles;
 	
@@ -477,15 +476,17 @@ void Interface::compile() {
 		}
 	}
 	gather_fields(this, all_fields);
-	gather_methods(this, all_methods);
 	check_dup_fields(all_fields);
-	all_methods = get_unique_methods(all_methods);
+	methods = get_unique_methods(methods);
 }
 
 
 void Object::pre_compile() {
 	if(!super && get_full_name() != "vnl.Object") {
 		super = resolve<Object>("vnl.Object");
+	}
+	for(Interface* iface : implements) {
+		methods.insert(methods.end(), iface->methods.begin(), iface->methods.end());
 	}
 }
 
@@ -495,21 +496,9 @@ void Object::compile() {
 		import(super);
 	}
 	all_fields.clear();
-	all_methods.clear();
 	gather_fields(this, all_fields);
-	gather_methods(this, all_methods);
-	Object* next = super;
-	while(next) {
-		for(Interface* iface : next->implements) {
-			all_methods.insert(all_methods.end(), iface->methods.begin(), iface->methods.end());
-		}
-		next = next->super;
-	}
-	for(Interface* iface : implements) {
-		all_methods.insert(all_methods.end(), iface->methods.begin(), iface->methods.end());
-	}
 	check_dup_fields(all_fields);
-	all_methods = get_unique_methods(all_methods);
+	methods = get_unique_methods(methods);
 	for(Method* method : methods) {
 		if(method->is_handle) {
 			if(method->params.size() != 1) {

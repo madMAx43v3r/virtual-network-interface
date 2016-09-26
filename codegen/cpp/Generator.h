@@ -649,14 +649,23 @@ public:
 		}
 	}
 	
-	void generate_writer(Interface* p_iface) {
-		out << "class Writer {" << endl << "public:@" << endl;
-		out << "Writer(vnl::io::TypeOutput& _out) : _out(_out) {@" << endl;
+	void generate_writer(Interface* p_iface, Interface* p_super) {
+		out << "class Writer ";
+		if(p_super) {
+			out << ": public " << subs(p_super->get_full_name()+"Client::Writer", ".", "::") << " ";
+		}
+		out << "{" << endl << "public:@" << endl;
+		out << "Writer(vnl::io::TypeOutput& _out, bool _top_level = true) " << endl << "\t:\t";
+		if(p_super) {
+			out << p_super->get_name() << "Client::Writer(_out, false), ";
+		}
+		out << "_out(_out), _top_level(_top_level)" << endl << "{@" << endl << "if(_top_level) {@" << endl;
 		out << "_out.putEntry(VNL_IO_INTERFACE, VNL_IO_BEGIN);" << endl;
-		out << "_out.putHash(VNI_HASH);" << endl << "$}" << endl;
-		out << "~Writer() {@" << endl << "_out.putEntry(VNL_IO_INTERFACE, VNL_IO_END);" << endl << "$}" << endl;
+		out << "_out.putHash(VNI_HASH);" << endl << "$}" << endl << "$}" << endl;
+		out << "virtual ~Writer() {@" << endl << "if(_top_level) {@" << endl;
+		out << "_out.putEntry(VNL_IO_INTERFACE, VNL_IO_END);" << endl << "$}" << endl << "$}" << endl;
 		
-		for(Method* method : p_iface->all_methods) {
+		for(Method* method : p_iface->methods) {
 			if(method->name == "handle") {
 				continue;
 			}
@@ -688,6 +697,7 @@ public:
 		
 		out << "$protected:@" << endl;
 		out << "vnl::io::TypeOutput& _out;" << endl;
+		out << "bool _top_level;" << endl;
 		out << "$};" << endl;
 	}
 	
@@ -700,11 +710,14 @@ public:
 		Object* p_object = dynamic_cast<Object*>(p_iface);
 		string client_name = p_iface->name + "Client";
 		string super;
+		Interface* p_super = 0;
 		bool is_base_object = false;
 		if(p_object && p_object->super) {
 			super = p_object->super->get_full_name() + "Client";
+			p_super = p_object->super;
 		} else if(p_iface && p_iface->super) {
 			super = p_iface->super->get_full_name() + "Client";
+			p_super = p_iface->super;
 		} else {
 			super = "vnl.Client";
 			is_base_object = true;
@@ -719,7 +732,10 @@ public:
 		
 		out << "class " << client_name << " : public " << subs(super, ".", "::") << " {" << endl;
 		out << "public:@" << endl;
-		generate_writer(p_iface);
+		generate_writer(p_iface, p_super);
+		out << endl << client_name << "() {}" << endl;
+		out << endl << client_name << "(const vnl::Address& addr) {@" << endl;
+		out << "set_address(addr);" << endl << "$}" << endl;
 		out << endl << client_name << "& operator=(const vnl::Address& addr) {@" << endl;
 		out << "set_address(addr);" << endl << "return *this;" << endl << "$}" << endl << endl;
 		for(Method* method : p_iface->methods) {

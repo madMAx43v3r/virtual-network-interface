@@ -1,6 +1,10 @@
 #!/bin/bash
 
-cd tmp
-make install
-cd ..
+TARGET=/usr/local/bin
+
+if [ "$#" -gt 0 ]; then
+  TARGET=$1
+fi
+
+cp installs/bin/* $TARGET/
 

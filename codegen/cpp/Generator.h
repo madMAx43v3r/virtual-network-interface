@@ -662,7 +662,7 @@ public:
 		out << "_out(_out), _top_level(_top_level)" << endl << "{@" << endl << "if(_top_level) {@" << endl;
 		out << "_out.putEntry(VNL_IO_INTERFACE, VNL_IO_BEGIN);" << endl;
 		out << "_out.putHash(" << hash32_of(p_iface) << ");" << endl << "$}" << endl << "$}" << endl;
-		out << "virtual ~Writer() {@" << endl << "if(_top_level) {@" << endl;
+		out << "~Writer() {@" << endl << "if(_top_level) {@" << endl;
 		out << "_out.putEntry(VNL_IO_INTERFACE, VNL_IO_END);" << endl << "$}" << endl << "$}" << endl;
 		
 		for(Method* method : p_iface->methods) {
@@ -679,7 +679,7 @@ public:
 			}
 			out << "$}" << endl;
 		}
-		for(Field* field : p_iface->all_fields) {
+		for(Field* field : p_iface->fields) {
 			out << "void set_" << field->name << "(";
 			echo_ref_to(field);
 			out << " _value) {@" << endl;
@@ -688,7 +688,7 @@ public:
 			out << "vnl::write(_out, _value);" << endl;
 			out << "$}" << endl;
 		}
-		for(Field* field : p_iface->all_fields) {
+		for(Field* field : p_iface->fields) {
 			out << "void get_" << field->name << "() {@" << endl;
 			out << "_out.putEntry(VNL_IO_CONST_CALL, 0);" << endl;
 			out << "_out.putHash(" << hash32_of(field) << ");" << endl;

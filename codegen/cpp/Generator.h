@@ -661,7 +661,7 @@ public:
 		}
 		out << "_out(_out), _top_level(_top_level)" << endl << "{@" << endl << "if(_top_level) {@" << endl;
 		out << "_out.putEntry(VNL_IO_INTERFACE, VNL_IO_BEGIN);" << endl;
-		out << "_out.putHash(VNI_HASH);" << endl << "$}" << endl << "$}" << endl;
+		out << "_out.putHash(" << hash32_of(p_iface) << ");" << endl << "$}" << endl << "$}" << endl;
 		out << "virtual ~Writer() {@" << endl << "if(_top_level) {@" << endl;
 		out << "_out.putEntry(VNL_IO_INTERFACE, VNL_IO_END);" << endl << "$}" << endl << "$}" << endl;
 		
@@ -734,6 +734,8 @@ public:
 		out << "public:@" << endl;
 		generate_writer(p_iface, p_super);
 		out << endl << client_name << "() {}" << endl;
+		out << endl << client_name << "(const " << client_name << "& other) {@" << endl;
+		out << "set_address(other.get_address());" << endl << "$}" << endl;
 		out << endl << client_name << "(const vnl::Address& addr) {@" << endl;
 		out << "set_address(addr);" << endl << "$}" << endl;
 		out << endl << client_name << "& operator=(const vnl::Address& addr) {@" << endl;

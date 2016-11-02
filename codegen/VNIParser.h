@@ -259,7 +259,9 @@ public:
 					cout << "    METHOD " << type << " " << name;
 					while(token != ")" && !end_of_file) {
 						string type_ = token;
-						string name_ = read_token();
+						read_token();
+						tmpl_params = parse_tmpl_types();
+						string name_ = token;
 						Field* param = new Field();
 						param->type = resolve(type_);
 						param->tmpl = tmpl_params;

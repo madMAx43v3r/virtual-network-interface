@@ -131,8 +131,6 @@ public:
 		Vector* p_vector = dynamic_cast<Vector*>(type);
 		Binary* p_binary = dynamic_cast<Binary*>(type);
 		String* p_string = dynamic_cast<String*>(type);
-		Array* p_array = dynamic_cast<Array*>(type);
-		List* p_list = dynamic_cast<List*>(type);
 		TypeName* p_typename = dynamic_cast<TypeName*>(type);
 		if(p_typename) {
 			echo_type(p_typename->type, constant);
@@ -182,10 +180,6 @@ public:
 			} else {
 				out << "vnl::String";
 			}
-		} else if(p_array) {
-			out << "vnl::Array";
-		} else if(p_list) {
-			out << "vnl::List";
 		} else if(p_void) {
 			out << "void";
 		}

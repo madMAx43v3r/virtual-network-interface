@@ -165,17 +165,6 @@ public:
 };
 
 
-class Array : public Base {
-public:
-	virtual string get_name() { return "Array"; }
-};
-
-class List : public Base {
-public:
-	virtual string get_name() { return "List"; }
-};
-
-
 class TypeName : public Base {
 public:
 	Base* type = 0;
@@ -334,6 +323,9 @@ static T* resolve(const string& ident) {
 	}
 	if(!res && PACKAGE) {
 		res = PACKAGE->index[ident];
+	}
+	if(!res && INDEX["vnl"]) {
+		res = ((Package*)INDEX["vnl"])->index[ident];
 	}
 	T* type = dynamic_cast<T*>(res);
 	if(!type) {
@@ -542,8 +534,6 @@ void init_type_system() {
 	add_type(new Real("double", 8));
 	add_type(new Binary());
 	add_type(new String());
-	add_type(new Array());
-	add_type(new List());
 }
 
 

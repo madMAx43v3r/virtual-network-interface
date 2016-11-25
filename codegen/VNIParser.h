@@ -66,6 +66,9 @@ public:
 		parse_package();
 		read_token();
 		parse_imports();
+		for(auto& entry : IMPORT) {
+			resolve(entry.second);
+		}
 		while(!end_of_file) {
 			string keyword = token;
 			string name = read_token();

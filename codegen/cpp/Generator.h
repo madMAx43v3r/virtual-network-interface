@@ -649,7 +649,7 @@ public:
 			out << ": public " << subs(p_super->get_full_name()+"Client::Writer", ".", "::") << " ";
 		}
 		out << "{" << endl << "public:@" << endl;
-		out << "Writer(vnl::io::TypeOutput& _out, bool _top_level = true) " << endl << "\t:\t";
+		out << "Writer(vnl::io::TypeOutput& _out, bool _top_level = false) " << endl << "\t:\t";
 		if(p_super) {
 			out << p_super->get_name() << "Client::Writer(_out, false), ";
 		}
@@ -777,7 +777,7 @@ public:
 		out << "_wr." << method->name << "(";
 		echo_method_args(method);
 		out << ");" << endl << "$}" << endl;
-		out << "vnl::Packet* _pkt = _call();" << endl;
+		out << "vnl::Packet* _pkt = _call(vnl::Frame::" << (method->is_const ? "CONST_CALL" : "CALL") << ");" << endl;
 		out << "if(_pkt) {@" << endl;
 		if(method->is_const) {
 			out << "vnl::read(_in, _result);" << endl;

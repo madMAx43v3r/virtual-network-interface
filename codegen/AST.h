@@ -427,17 +427,17 @@ void Class::pre_compile() {
 	if(!super && get_full_name() != "vnl.Value") {
 		super = resolve<Class>("vnl.Value");
 	}
-	Class* next = super;
-	while(next) {
-		next->sub_types.insert(this);
-		next = next->super;
-	}
 }
 
 void Class::compile() {
 	Struct::compile();
 	if(super) {
 		import(super);
+	}
+	Class* next = super;
+	while(next) {
+		next->sub_types.insert(this);
+		next = next->super;
 	}
 	all_fields.clear();
 	gather_fields(this, all_fields);

@@ -388,6 +388,7 @@ public:
 		if(p_struct) {
 			out << "static " << type_name << "* create();" << endl;
 			out << "virtual " << type_name << "* clone() const;" << endl;
+			out << "virtual void raise() const { throw *this; }" << endl;
 			out << "virtual void destroy();" << endl << endl;
 			out << "virtual void serialize(vnl::io::TypeOutput& _out) const;" << endl;
 			out << "virtual void deserialize(vnl::io::TypeInput& _in, int _size);" << endl << endl;
@@ -465,10 +466,7 @@ public:
 			if(is_base_value && p_class) {
 				sub_classes = p_class->sub_types;
 				for(Class* sub : sub_classes) {
-					if(sub) {
-						out << "#include <" << subs(sub->get_full_name(), ".", "/") << ".hxx>" << endl;
-						sub_classes.insert(sub);
-					}
+					out << "#include <" << subs(sub->get_full_name(), ".", "/") << ".hxx>" << endl;
 				}
 			}
 			
@@ -762,15 +760,9 @@ public:
 	}
 	
 	void echo_client_call(Interface* p_iface, Method* method) {
-		out << "int " << method->name << "(";
+		echo_type(method);
+		out << " " << method->name << "(";
 		echo_method_params(method, true);
-		if(method->is_const) {
-			if(method->params.size()) {
-				out << ", ";
-			}
-			echo_type(method);
-			out << "& _result";
-		}
 		out << ") {@" << endl;
 		out << "_buf.wrap(_data);" << endl;
 		out << "{@" << endl << "Writer _wr(_out);" << endl;
@@ -778,13 +770,20 @@ public:
 		echo_method_args(method);
 		out << ");" << endl << "$}" << endl;
 		out << "vnl::Packet* _pkt = _call(vnl::Frame::" << (method->is_const ? "CONST_CALL" : "CALL") << ");" << endl;
+		if(method->is_const) {
+			echo_type(method);
+			out << " _result;" << endl;
+		}
 		out << "if(_pkt) {@" << endl;
 		if(method->is_const) {
 			out << "vnl::read(_in, _result);" << endl;
 		}
 		out << "_pkt->ack();" << endl;
-		out << "$}" << endl << "return _error;";
-		out << endl << "$}" << endl << endl;
+		out << "$} else {@" << endl << "throw vnl::IOException();" << endl << "$}" << endl;
+		if(method->is_const) {
+			out << "return _result;" << endl;
+		}
+		out << "$}" << endl << endl;
 	}
 	
 	void echo_call_switch(Interface* p_iface, bool is_const) {

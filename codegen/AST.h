@@ -51,6 +51,8 @@ std::ostream& error() {
 	return cerr << CURR_FILE << ":" << CURR_LINE << ": error: ";
 }
 
+static Base* resolve(const string& ident);
+
 
 class Base {
 public:
@@ -206,7 +208,7 @@ public:
 	Package* package;
 	string name;
 	
-	set<string> imports;
+	set<Type*> imports;
 	
 	vector<Field*> constants;
 	
@@ -219,9 +221,6 @@ public:
 			FAIL();
 		}
 		INDEX[full] = this;
-		for(auto& entry : IMPORT) {
-			imports.insert(entry.second);
-		}
 	}
 	
 	void import(Type* type);
@@ -236,9 +235,13 @@ public:
 
 class Enum : public Type {
 public:
+	Enum* super = 0;
+	
 	vector<string> values;
 	
 	Enum(string name) : Type(name) {}
+	
+	virtual void pre_compile();
 	
 };
 
@@ -284,6 +287,7 @@ public:
 	
 	Interface(string name) : Type(name) {}
 	
+	virtual void pre_compile();
 	virtual void compile();
 	
 };
@@ -313,8 +317,6 @@ public:
 
 
 
-static Base* resolve(const string& ident);
-
 template<typename T>
 static T* resolve(const string& ident) {
 	Base* res = INDEX[ident];
@@ -340,7 +342,7 @@ static Base* resolve(const string& ident) {
 }
 
 
-void check_dup_fields(vector<Field*>& fields) {
+inline void check_dup_fields(vector<Field*>& fields) {
 	map<uint64_t, Field*> map;
 	for(Field* field : fields) {
 		uint64_t hash = field->get_hash();
@@ -352,7 +354,7 @@ void check_dup_fields(vector<Field*>& fields) {
 	}
 }
 
-vector<Method*> get_unique_methods(vector<Method*>& methods) {
+inline vector<Method*> get_unique_methods(vector<Method*>& methods) {
 	map<uint64_t, Method*> map;
 	for(Method* method : methods) {
 		uint64_t hash = method->get_hash();
@@ -386,7 +388,7 @@ void gather_methods(T* next, vector<Method*>& vec) {
 
 
 void Type::import(Type* p_type) {
-	imports.insert(p_type->package->name + "." + p_type->name);
+	imports.insert(p_type);
 }
 
 void Type::import(TypeName* p_name) {
@@ -403,6 +405,13 @@ void Type::import(TypeName* p_name) {
 		} else if(p_param_type) {
 			import(p_param_type);
 		}
+	}
+}
+
+
+void Enum::pre_compile() {
+	if(!super && get_full_name() != "vnl.Enum") {
+		super = resolve<Enum>("vnl.Enum");
 	}
 }
 
@@ -445,6 +454,12 @@ void Class::compile() {
 }
 
 
+void Interface::pre_compile() {
+	if(!super && get_full_name() != "vnl.Interface") {
+		super = resolve<Interface>("vnl.Interface");
+	}
+}
+
 void Interface::compile() {
 	Type::compile();
 	if(super) {
@@ -474,6 +489,7 @@ void Interface::compile() {
 
 
 void Object::pre_compile() {
+	Interface::pre_compile();
 	if(!super && get_full_name() != "vnl.Object") {
 		super = resolve<Object>("vnl.Object");
 	}
@@ -515,15 +531,15 @@ void Object::compile() {
 
 
 
-void add_type(Base* type) {
+inline void add_type(Base* type) {
 	INDEX[type->get_name()] = type;
 }
 
-void add_type_full(Type* type) {
+inline void add_type_full(Type* type) {
 	INDEX[type->get_full_name()] = type;
 }
 
-void init_type_system() {
+inline void init_type_system() {
 	add_type(new Void());
 	add_type(new Bool());
 	add_type(new Integer("char", 1));

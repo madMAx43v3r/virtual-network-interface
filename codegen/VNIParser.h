@@ -66,53 +66,44 @@ public:
 		parse_package();
 		read_token();
 		parse_imports();
+		vector<Type*> imports;
 		for(auto& entry : IMPORT) {
-			resolve(entry.second);
+			imports.push_back(resolve<Type>(entry.second));
 		}
 		while(!end_of_file) {
 			string keyword = token;
 			string name = read_token();
 			string full_name = PACKAGE->name + "." + name;
 			Base* p_base = 0;
-			Enum* p_enum = 0;
-			Struct* p_struct = 0;
-			Class* p_class = 0;
-			Interface* p_interface = 0;
-			Object* p_object = 0;
 			if(keyword == "enum") {
-				p_enum = resolve<Enum>(full_name);
+				p_base = resolve<Enum>(full_name);
 				cout << "  ENUM " << name << endl;
 			} else if(keyword == "struct") {
-				p_struct = resolve<Struct>(full_name);
+				p_base = resolve<Struct>(full_name);
 				cout << "  STRUCT " << name << endl;
 			} else if(keyword == "class") {
-				p_class = resolve<Class>(full_name);
+				p_base = resolve<Class>(full_name);
 				cout << "  CLASS " << name << endl;
 			} else if(keyword == "interface") {
-				p_interface = resolve<Interface>(full_name);
+				p_base = resolve<Interface>(full_name);
 				cout << "  INTERFACE " << name << endl;
 			} else if(keyword == "object") {
-				p_object = resolve<Object>(full_name);
+				p_base = resolve<Object>(full_name);
 				cout << "  OBJECT " << name << endl;
-			}
-			if(p_object) {
-				p_interface = p_object;
-			}
-			if(p_interface) {
-				p_base = p_interface;
-			}
-			if(p_class) {
-				p_struct = p_class;
-			}
-			if(p_struct) {
-				p_base = p_struct;
-			}
-			if(p_enum) {
-				p_base = p_enum;
 			}
 			if(!p_base) {
 				ERROR("expected type definition");
 			}
+			Type* p_type = dynamic_cast<Type*>(p_base);
+			Enum* p_enum = dynamic_cast<Enum*>(p_base);
+			Struct* p_struct = dynamic_cast<Struct*>(p_base);
+			Class* p_class = dynamic_cast<Class*>(p_base);
+			Interface* p_interface = dynamic_cast<Interface*>(p_base);
+			Object* p_object = dynamic_cast<Object*>(p_base);
+			if(p_type) {
+				p_type->imports.insert(imports.begin(), imports.end());
+			}
+			
 			read_token();
 			if(p_enum) {
 				parse_enum(p_enum);
@@ -369,6 +360,10 @@ public:
 	}
 	
 	void parse_enum(Enum* type) {
+		if(token == ";") {
+			type->generate = false;
+			return;
+		}
 		if(token != "{") {
 			ERROR("expected {");
 		}

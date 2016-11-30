@@ -589,7 +589,7 @@ public:
 			for(Field* field : all_fields) {
 				out << "case " << index++ << ": return \"" << field->name << "\";" << endl;
 			}
-			out << "default: return \"?\";" << endl;
+			out << "default: return 0;" << endl;
 			out << "$}" << endl << "$}" << endl << endl;
 			
 			out << header << "void " << scope << "get_field(int _index, vnl::String& _str) const {@" << endl;

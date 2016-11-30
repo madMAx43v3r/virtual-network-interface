@@ -405,7 +405,9 @@ public:
 			out << "virtual int field_index(vnl::Hash32 _hash) const;" << endl;
 			out << "virtual const char* field_name(int _index) const;" << endl;
 			out << "virtual void get_field(int _index, vnl::String& _str) const;" << endl;
-			out << "virtual void set_field(int _index, const vnl::String& _str);" << endl << endl;
+			out << "virtual void set_field(int _index, const vnl::String& _str);" << endl;
+			out << "virtual void get_field(int _index, vnl::io::TypeOutput& _out) const;" << endl;
+			out << "virtual void set_field(int _index, vnl::io::TypeInput& _in);" << endl << endl;
 		}
 		if(p_enum) {
 			out << "virtual void to_string_ex(vnl::String& str) const;" << endl;
@@ -604,6 +606,23 @@ public:
 			index = 0;
 			for(Field* field : all_fields) {
 				out << "case " << index++ << ": vnl::from_string(_str, " << field->name << "); break;" << endl;
+			}
+			out << "$}" << endl << "$}" << endl << endl;
+			
+			out << header << "void " << scope << "get_field(int _index, vnl::io::TypeOutput& _out) const {@" << endl;
+			out << "switch(_index) {@" << endl;
+			index = 0;
+			for(Field* field : all_fields) {
+				out << "case " << index++ << ": vnl::write(_out, " << field->name << "); break;" << endl;
+			}
+			out << "default: _out.putNull();" << endl;
+			out << "$}" << endl << "$}" << endl << endl;
+			
+			out << header << "void " << scope << "set_field(int _index, vnl::io::TypeInput& _in) {@" << endl;
+			out << "switch(_index) {@" << endl;
+			index = 0;
+			for(Field* field : all_fields) {
+				out << "case " << index++ << ": vnl::read(_in, " << field->name << "); break;" << endl;
 			}
 			out << "$}" << endl << "$}" << endl << endl;
 		}

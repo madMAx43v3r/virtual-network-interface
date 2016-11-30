@@ -38,6 +38,7 @@ static string CURR_FILE = "<unknown>";
 static int CURR_LINE = -1;
 
 static Package* PACKAGE = 0;
+static Type* TYPE = 0;
 static map<string, string> IMPORT;
 
 
@@ -172,6 +173,11 @@ public:
 	Base* type = 0;
 	vector<Base*> tmpl;
 	
+	TypeName() {}
+	TypeName(Base* type) : type(type) {}
+	
+	virtual string get_name() { return type->get_name(); }
+	
 };
 
 
@@ -203,10 +209,23 @@ public:
 };
 
 
+class Generic : public Base {
+public:
+	string name;
+	
+	Generic(string name) : name(name) {}
+	
+	virtual string get_name() { return name; }
+	
+};
+
+
 class Type : public Base {
 public:
 	Package* package;
 	string name;
+	
+	TypeName* super = 0;
 	
 	set<Type*> imports;
 	
@@ -235,8 +254,6 @@ public:
 
 class Enum : public Type {
 public:
-	Enum* super = 0;
-	
 	vector<string> values;
 	
 	Enum(string name) : Type(name) {}
@@ -248,8 +265,6 @@ public:
 
 class Struct : public Type {
 public:
-	Struct* super = 0;
-	
 	vector<Field*> fields;
 	vector<Field*> all_fields;
 	
@@ -263,8 +278,6 @@ public:
 
 class Class : public Struct {
 public:
-	Class* super = 0;
-	
 	set<Class*> sub_types;
 	
 	Class(string name) : Struct(name) {}
@@ -277,8 +290,7 @@ public:
 
 class Interface : public Type {
 public:
-	Interface* super = 0;
-	vector<string> generic;
+	vector<Generic*> generic;
 	
 	vector<Field*> fields;
 	vector<Field*> all_fields;
@@ -295,7 +307,6 @@ public:
 
 class Object : public Interface {
 public:
-	Object* super = 0;
 	vector<Interface*> implements;
 	
 	set<Class*> handles;
@@ -320,6 +331,16 @@ public:
 template<typename T>
 static T* resolve(const string& ident) {
 	Base* res = INDEX[ident];
+	if(!res && TYPE) {
+		Interface* p_iface = dynamic_cast<Interface*>(TYPE);
+		if(p_iface) {
+			for(Generic* gen : p_iface->generic) {
+				if(gen->name == ident) {
+					res = gen;
+				}
+			}
+		}
+	}
 	if(!res && IMPORT.count(ident)) {
 		res = resolve(IMPORT[ident]);
 	}
@@ -373,7 +394,9 @@ inline vector<Method*> get_unique_methods(vector<Method*>& methods) {
 template<typename T>
 void gather_fields(T* next, vector<Field*>& vec) {
 	if(next) {
-		gather_fields(next->super, vec);
+		if(next->super) {
+			gather_fields(dynamic_cast<T*>(next->super->type), vec);
+		}
 		vec.insert(vec.end(), next->fields.begin(), next->fields.end());
 	}
 }
@@ -381,7 +404,9 @@ void gather_fields(T* next, vector<Field*>& vec) {
 template<typename T>
 void gather_methods(T* next, vector<Method*>& vec) {
 	if(next) {
-		gather_methods(next->super, vec);
+		if(next->super) {
+			gather_methods(dynamic_cast<T*>(next->super->type), vec);
+		}
 		vec.insert(vec.end(), next->methods.begin(), next->methods.end());
 	}
 }
@@ -411,14 +436,14 @@ void Type::import(TypeName* p_name) {
 
 void Enum::pre_compile() {
 	if(!super && get_full_name() != "vnl.Enum") {
-		super = resolve<Enum>("vnl.Enum");
+		super = new TypeName(resolve<Enum>("vnl.Enum"));
 	}
 }
 
 
 void Struct::pre_compile() {
 	if(!super && get_full_name() != "vnl.Value") {
-		super = resolve<Struct>("vnl.Value");
+		super = new TypeName(resolve<Struct>("vnl.Value"));
 	}
 }
 
@@ -434,7 +459,7 @@ void Struct::compile() {
 
 void Class::pre_compile() {
 	if(!super && get_full_name() != "vnl.Value") {
-		super = resolve<Class>("vnl.Value");
+		super = new TypeName(resolve<Class>("vnl.Value"));
 	}
 }
 
@@ -443,10 +468,15 @@ void Class::compile() {
 	if(super) {
 		import(super);
 	}
-	Class* next = super;
+	TypeName* next = super;
 	while(next) {
-		next->sub_types.insert(this);
-		next = next->super;
+		Class* p_class = dynamic_cast<Class*>(next->type);
+		if(p_class) {
+			p_class->sub_types.insert(this);
+			next = p_class->super;
+		} else {
+			next = 0;
+		}
 	}
 	all_fields.clear();
 	gather_fields(this, all_fields);
@@ -456,7 +486,7 @@ void Class::compile() {
 
 void Interface::pre_compile() {
 	if(!super && get_full_name() != "vnl.Interface") {
-		super = resolve<Interface>("vnl.Interface");
+		super = new TypeName(resolve<Interface>("vnl.Interface"));
 	}
 }
 
@@ -489,10 +519,10 @@ void Interface::compile() {
 
 
 void Object::pre_compile() {
-	Interface::pre_compile();
 	if(!super && get_full_name() != "vnl.Object") {
-		super = resolve<Object>("vnl.Object");
+		super = new TypeName(resolve<Object>("vnl.Object"));
 	}
+	Interface::pre_compile();
 	for(Interface* iface : implements) {
 		methods.insert(methods.end(), iface->methods.begin(), iface->methods.end());
 	}
@@ -500,9 +530,6 @@ void Object::pre_compile() {
 
 void Object::compile() {
 	Interface::compile();
-	if(super) {
-		import(super);
-	}
 	all_fields.clear();
 	gather_fields(this, all_fields);
 	check_dup_fields(all_fields);
@@ -532,11 +559,8 @@ void Object::compile() {
 
 
 inline void add_type(Base* type) {
+	type->generate = false;
 	INDEX[type->get_name()] = type;
-}
-
-inline void add_type_full(Type* type) {
-	INDEX[type->get_full_name()] = type;
 }
 
 inline void init_type_system() {
@@ -550,6 +574,9 @@ inline void init_type_system() {
 	add_type(new Real("double", 8));
 	add_type(new Binary());
 	add_type(new String());
+	PACKAGE = Package::get("vnl");
+	add_type(new Type("Type"));
+	PACKAGE = 0;
 }
 
 

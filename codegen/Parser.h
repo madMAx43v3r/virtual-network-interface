@@ -40,6 +40,7 @@ class Parser {
 public:
 	Parser(string filename) : file_name(filename), stream(filename, std::ifstream::in) {
 		PACKAGE = 0;
+		TYPE = 0;
 		CURR_FILE = file_name;
 		CURR_LINE = 0;
 		IMPORT.clear();

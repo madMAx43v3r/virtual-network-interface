@@ -100,7 +100,10 @@ public:
 			Class* p_class = dynamic_cast<Class*>(p_base);
 			Interface* p_interface = dynamic_cast<Interface*>(p_base);
 			Object* p_object = dynamic_cast<Object*>(p_base);
+			
+			TYPE = 0;
 			if(p_type) {
+				TYPE = p_type;
 				p_type->imports.insert(imports.begin(), imports.end());
 			}
 			
@@ -111,8 +114,8 @@ public:
 				continue;
 			}
 			if(p_interface) {
-				p_interface->generic = parse_generics();
-				for(string& gen : p_interface->generic) {
+				for(string& gen : parse_generics()) {
+					p_interface->generic.push_back(new Generic(gen));
 					cout << "    GENERIC " << gen << endl;
 				}
 			}
@@ -121,15 +124,17 @@ public:
 					ERROR("only class and interface can extend");
 				}
 				string super = read_token();
-				cout << "  EXTENDS " << super << endl;
-				if(p_object) {
-					p_object->super = resolve<Object>(super);
-				} else if(p_interface) {
-					p_interface->super = resolve<Interface>(super);
-				} else if(p_class) {
-					p_class->super = resolve<Class>(super);
-				}
 				read_token();
+				TypeName* p_super = new TypeName(resolve<Type>(super));
+				vector<string> generics = parse_generics();
+				cout << "  EXTENDS " << super << endl;
+				for(string& gen : generics) {
+					p_super->tmpl.push_back(resolve(gen));
+					cout << "    GENERIC " << gen << endl;
+				}
+				if(p_type) {
+					p_type->super = p_super;
+				}
 			}
 			if(token == "implements") {
 				if(!p_object) {

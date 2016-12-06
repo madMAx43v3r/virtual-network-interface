@@ -184,8 +184,6 @@ public:
 		Integer* p_int = dynamic_cast<Integer*>(type);
 		Real* p_real = dynamic_cast<Real*>(type);
 		Vector* p_vector = dynamic_cast<Vector*>(type);
-		Binary* p_binary = dynamic_cast<Binary*>(type);
-		String* p_string = dynamic_cast<String*>(type);
 		TypeName* p_typename = dynamic_cast<TypeName*>(type);
 		Generic* p_generic = dynamic_cast<Generic*>(type);
 		if(p_typename) {
@@ -194,7 +192,11 @@ public:
 		} else if(p_object) {
 			out << "vnl::Address";
 		} else if(p_iface) {
-			out << full(p_iface);
+			if(p_iface->get_full_name() == "vnl.String" && constant) {
+				out << "char*";
+			} else {
+				out << full(p_iface);
+			}
 		} else if(p_struct) {
 			out << full(p_struct);
 		} else if(p_enum) {
@@ -218,14 +220,6 @@ public:
 				case 4: out << "float"; break;
 				case 8: out << "double"; break;
 				default: out << "?"; break;
-			}
-		} else if(p_binary) {
-			out << "vnl::Binary";
-		} else if(p_string) {
-			if(constant) {
-				out << "char*";
-			} else {
-				out << "vnl::String";
 			}
 		} else if(p_void) {
 			out << "void";

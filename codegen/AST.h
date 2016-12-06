@@ -157,17 +157,6 @@ public:
 };
 
 
-class Binary : public Base {
-public:
-	virtual string get_name() { return "Binary"; }
-};
-
-class String : public Base {
-public:
-	virtual string get_name() { return "String"; }
-};
-
-
 class TypeName : public Base {
 public:
 	Base* type = 0;
@@ -572,8 +561,6 @@ inline void init_type_system() {
 	add_type(new Integer("long", 8));
 	add_type(new Real("float", 4));
 	add_type(new Real("double", 8));
-	add_type(new Binary());
-	add_type(new String());
 	PACKAGE = Package::get("vnl");
 	add_type(new Type("Type"));
 	PACKAGE = 0;

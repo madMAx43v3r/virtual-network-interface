@@ -35,11 +35,18 @@ public:
 	}
 	
 	virtual void generate_all() {
+		vector<Type*> types;
 		for(auto entry : INDEX) {
 			Type* p_type = dynamic_cast<Type*>(entry.second);
 			if(p_type && p_type->generate) {
-				generate(p_type);
+				types.push_back(p_type);
 			}
+		}
+		sort(types.begin(), types.end(), [](Type* a, Type* b) -> bool{
+			return a->get_full_name() < b->get_full_name();
+		});
+		for(Type* type : types) {
+			generate(type);
 		}
 	}
 	

@@ -278,7 +278,12 @@ public:
 	}
 	
 	void echo_includes(const set<Type*>& imports) {
-		for(Type* import : imports) {
+		vector<Type*> sorted(imports.begin(), imports.end());
+		sort(sorted.begin(), sorted.end(), [](Type* a, Type* b) -> bool
+		{
+			return a->get_full_name() < b->get_full_name(); 
+		});
+		for(Type* import : sorted) {
 			string full_name = import->get_full_name();
 			out << "#include <" << subs(full_name, ".", "/");
 			if(full_name == "vnl.Interface" || full_name == "vnl.Enum" || dynamic_cast<Interface*>(import)) {
@@ -483,9 +488,13 @@ public:
 			out << endl << "#include <" << subs(p_type->get_full_name(), ".", "/") << (p_iface ? "Support" : "") << ".hxx" << ">" << endl;
 			out << "#include <vnl/Type.hxx>" << endl;
 			
-			set<Class*> sub_classes;
+			vector<Class*> sub_classes;
 			if(is_base_value && p_class) {
-				sub_classes = p_class->sub_types;
+				sub_classes.assign(p_class->sub_types.begin(), p_class->sub_types.end());
+				sort(sub_classes.begin(), sub_classes.end(), [](Class* a, Class* b) -> bool
+				{
+					return a->get_full_name() < b->get_full_name(); 
+				});
 				for(Class* sub : sub_classes) {
 					out << "#include <" << subs(sub->get_full_name(), ".", "/") << ".hxx>" << endl;
 				}
@@ -876,8 +885,12 @@ public:
 	}
 	
 	void echo_handle_switch(Object* module) {
+		vector<Class*> types(module->handles.begin(), module->handles.end());
+		sort(types.begin(), types.end(), [](Class* a, Class* b) -> bool {
+			return a->get_full_name() < b->get_full_name();
+		});
 		out << "switch(_sample->vni_hash()) {" << endl;
-		for(Class* p_class : module->handles) {
+		for(Class* p_class : types) {
 			out << "case " << hash32_of(p_class) << ": ";
 			out << "handle(*((" << full(p_class) << "*)_sample), *_packet); return true;" << endl;
 		}

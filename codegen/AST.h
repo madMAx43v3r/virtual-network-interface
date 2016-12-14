@@ -407,9 +407,15 @@ void Type::import(Type* p_type) {
 
 void Type::import(TypeName* p_name) {
 	Type* p_type = dynamic_cast<Type*>(p_name->type);
-	Interface* p_iface = dynamic_cast<Interface*>(p_name->type);
+	Vector* p_vector = dynamic_cast<Vector*>(p_name->type);
 	if(p_type) {
 		import(p_type);
+	}
+	if(p_vector) {
+		Type* p_vector_type = dynamic_cast<Type*>(p_vector->type);
+		if(p_vector_type) {
+			import(p_vector_type);
+		}
 	}
 	for(Base* param : p_name->tmpl) {
 		TypeName* p_param_name = dynamic_cast<TypeName*>(param);

@@ -241,6 +241,15 @@ public:
 };
 
 
+class Extern : public Type {
+public:
+	Extern(string name) : Type(name) {
+		generate = false;
+	}
+	
+};
+
+
 class Enum : public Type {
 public:
 	vector<string> values;

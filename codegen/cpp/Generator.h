@@ -184,6 +184,7 @@ public:
 		Integer* p_int = dynamic_cast<Integer*>(type);
 		Real* p_real = dynamic_cast<Real*>(type);
 		Vector* p_vector = dynamic_cast<Vector*>(type);
+		Type* p_type = dynamic_cast<Type*>(type);
 		TypeName* p_typename = dynamic_cast<TypeName*>(type);
 		Generic* p_generic = dynamic_cast<Generic*>(type);
 		if(p_typename) {
@@ -201,6 +202,8 @@ public:
 			out << full(p_struct);
 		} else if(p_enum) {
 			out << full(p_enum);
+		} else if(p_type) {
+			out << full(p_type);
 		} else if(p_vector) {
 			out << "vnl::Vector<";
 			echo_type(p_vector->type);
@@ -286,7 +289,9 @@ public:
 		for(Type* import : sorted) {
 			string full_name = import->get_full_name();
 			out << "#include <" << subs(full_name, ".", "/");
-			if(full_name == "vnl.Interface" || full_name == "vnl.Enum" || dynamic_cast<Interface*>(import)) {
+			if(full_name == "vnl.Interface" || full_name == "vnl.Enum"
+				|| dynamic_cast<Extern*>(import) || dynamic_cast<Interface*>(import))
+			{
 				out << ".h>" << endl;
 			} else {
 				out << ".hxx>" << endl;
@@ -476,8 +481,42 @@ public:
 			out << endl;
 			generate_source(p_type);
 		}
-		
 		namespace_end();
+		
+		if(is_base_value && p_class) {
+			vector<Type*> extern_types;
+			for(auto& entry : INDEX) {
+				Extern* type = dynamic_cast<Extern*>(entry.second);
+				if(type) {
+					extern_types.push_back(type);
+				}
+			}
+			sort(extern_types.begin(), extern_types.end(), [](Type* a, Type* b) -> bool
+			{
+				return a->get_full_name() < b->get_full_name(); 
+			});
+			out << endl;
+			for(Type* p_extern : extern_types) {
+				vector<string> scope = split(p_extern->package->name, '.');
+				for(string& s : scope) {
+					out << "namespace " << s << " { ";
+				}
+				out << "class " << p_extern->name << ";";
+				for(string& s : scope) {
+					out << " }";
+				}
+				out << endl;
+			}
+			out << endl << "namespace vnl {" << endl << endl;
+			for(Type* p_extern : extern_types) {
+				out << "void read(vnl::io::TypeInput& in, " << full(p_extern) << "& obj);" << endl;
+				out << "void write(vnl::io::TypeOutput& out, const " << full(p_extern) << "& obj);" << endl;
+				out << "void from_string(const vnl::String& str, " << full(p_extern) << "& obj);" << endl;
+				out << "void to_string(vnl::String& str, const " << full(p_extern) << "& obj);" << endl << endl;
+			}
+			out << "} // vnl" << endl;
+		}
+		
 		out << endl << "#endif // " << guard_sym << endl;
 	}
 	
@@ -906,12 +945,6 @@ public:
 	ostringstream out;
 	
 };
-
-
-
-
-
-
 
 
 

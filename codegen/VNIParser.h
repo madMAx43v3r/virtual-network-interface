@@ -39,7 +39,10 @@ public:
 			string keyword = token;
 			string name = read_token();
 			Base* base = 0;
-			if(keyword == "enum") {
+			if(keyword == "extern") {
+				base = new Extern(name);
+				cout << "  EXTERN " << name << endl;
+			} else if(keyword == "enum") {
 				base = new Enum(name);
 				cout << "  ENUM " << name << endl;
 			} else if(keyword == "struct") {
@@ -75,7 +78,10 @@ public:
 			string name = read_token();
 			string full_name = PACKAGE->name + "." + name;
 			Base* p_base = 0;
-			if(keyword == "enum") {
+			if(keyword == "extern") {
+				p_base = resolve<Extern>(full_name);
+				cout << "  EXTERN " << name << endl;
+			} else if(keyword == "enum") {
 				p_base = resolve<Enum>(full_name);
 				cout << "  ENUM " << name << endl;
 			} else if(keyword == "struct") {
@@ -158,6 +164,9 @@ public:
 				p_base->generate = false;
 				read_token();
 				continue;
+			}
+			if(!p_base->generate) {
+				ERROR("expected ;");
 			}
 			if(token != "{") {
 				ERROR("expeced {");

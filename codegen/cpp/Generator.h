@@ -49,7 +49,7 @@ public:
 			out << "\t" << file << endl;
 		}
 		out << ")" << endl << endl;
-		update("", "CMakeLists.txt", out.str());
+		update("", "CMakeLists.cmake", out.str());
 	}
 	
 	vector<string> source_files;

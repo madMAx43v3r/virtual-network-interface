@@ -30,6 +30,7 @@ public:
 	bool make_shared = false;
 	
 	Generator() {
+		whitelist.insert("CMakeLists.txt");
 		whitelist.insert("CMakeFiles");
 		whitelist.insert("libvni.a");
 		whitelist.insert("libvni_shared.so");

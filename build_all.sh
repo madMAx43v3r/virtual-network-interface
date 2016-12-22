@@ -1,9 +1,6 @@
 #!/bin/bash
 
-cd `dirname $0`
-
-mkdir -p tmp
-cd tmp
-cmake ..
-make -j `nproc` $*
+if [ ! -e vnicppcodegen ]; then
+  g++ -std=c++11 -g -Wfatal-errors -Icodegen/ -o vnicppcodegen codegen/cpp/vnicppcodegen.cpp
+fi
 

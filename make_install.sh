@@ -6,5 +6,5 @@ if [ "$#" -gt 0 ]; then
   TARGET=$1
 fi
 
-cp installs/bin/* $TARGET/
+cp vnicppcodegen $TARGET/
 

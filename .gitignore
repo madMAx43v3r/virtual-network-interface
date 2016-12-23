@@ -30,6 +30,5 @@
 .project
 .cproject
 
-/tmp
-/installs
+/vnicppcodegen
 

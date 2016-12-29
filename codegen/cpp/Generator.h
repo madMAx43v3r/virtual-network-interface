@@ -453,6 +453,10 @@ public:
 					
 					out << "virtual void handle(";
 					echo_method_params(method, true);
+					out << ", vnl::Basic* input) { handle(" << method->params[0]->name << "); }" << endl;
+					
+					out << "virtual void handle(";
+					echo_method_params(method, true);
 					out << ") {}" << endl;
 				} else {
 					out << "virtual ";
@@ -467,6 +471,7 @@ public:
 			out << "virtual bool vni_const_call(vnl::io::TypeInput& _in, uint32_t _hash, int _num_args, vnl::io::TypeOutput& _out);" << endl;
 			if(p_object) {
 				out << "virtual bool handle_switch(vnl::Value* _sample, vnl::Packet* _packet);" << endl;
+				out << "virtual bool handle_switch(vnl::Value* _sample, vnl::Basic* _input);" << endl;
 			}
 			
 			out << endl << "template<class W>" << endl << "void write_fields(W& _writer) const {@" << endl;
@@ -706,8 +711,12 @@ public:
 		
 		if(p_object) {
 			out << header << "bool " << scope << "handle_switch(vnl::Value* _sample, vnl::Packet* _packet) {@" << endl;
-			echo_handle_switch(p_object);
+			echo_handle_switch(p_object, "*_packet");
 			out << "return Super::handle_switch(_sample, _packet);" << endl << "$}" << endl << endl;
+			
+			out << header << "bool " << scope << "handle_switch(vnl::Value* _sample, vnl::Basic* _input) {@" << endl;
+			echo_handle_switch(p_object, "_input");
+			out << "return Super::handle_switch(_sample, _input);" << endl << "$}" << endl << endl;
 		}
 		
 		if(p_enum) {
@@ -924,7 +933,7 @@ public:
 		out << "}" << endl;
 	}
 	
-	void echo_handle_switch(Object* module) {
+	void echo_handle_switch(Object* module, string payload) {
 		vector<Class*> types(module->handles.begin(), module->handles.end());
 		sort(types.begin(), types.end(), [](Class* a, Class* b) -> bool {
 			return a->get_full_name() < b->get_full_name();
@@ -932,7 +941,7 @@ public:
 		out << "switch(_sample->vni_hash()) {" << endl;
 		for(Class* p_class : types) {
 			out << "case " << hash32_of(p_class) << ": ";
-			out << "handle(*((" << full(p_class) << "*)_sample), *_packet); return true;" << endl;
+			out << "handle(*((" << full(p_class) << "*)_sample), " << payload << "); return true;" << endl;
 		}
 		out << "}" << endl;
 	}

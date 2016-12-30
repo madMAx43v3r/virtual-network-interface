@@ -424,16 +424,16 @@ public:
 			out << "virtual void deserialize(vnl::io::TypeInput& _in, int _size);" << endl << endl;
 		}
 		if(p_enum || p_struct || p_iface) {
-			out << "virtual uint32_t vni_hash() const { return VNI_HASH; }" << endl;
-			out << "virtual const char* type_name() const { return \"" << p_type->get_full_name() << "\"; }" << endl << endl;
+			out << "virtual uint32_t get_vni_hash() const { return VNI_HASH; }" << endl;
+			out << "virtual const char* get_type_name() const { return \"" << p_type->get_full_name() << "\"; }" << endl << endl;
 		}
 		if(p_struct) {
-			out << "virtual int type_size() const { return sizeof(" << type_name << "); }" << endl;
+			out << "virtual int get_type_size() const { return sizeof(" << type_name << "); }" << endl;
 		}
 		if(p_struct || p_iface) {
-			out << "virtual int num_fields() const { return NUM_FIELDS; }" << endl;
-			out << "virtual int field_index(vnl::Hash32 _hash) const;" << endl;
-			out << "virtual const char* field_name(int _index) const;" << endl;
+			out << "virtual int get_num_fields() const { return NUM_FIELDS; }" << endl;
+			out << "virtual int get_field_index(vnl::Hash32 _hash) const;" << endl;
+			out << "virtual const char* get_field_name(int _index) const;" << endl;
 			out << "virtual void get_field(int _index, vnl::String& _str) const;" << endl;
 			out << "virtual void set_field(int _index, const vnl::String& _str);" << endl;
 			out << "virtual void get_field(int _index, vnl::io::TypeOutput& _out) const;" << endl;
@@ -547,7 +547,6 @@ public:
 			
 			namespace_begin();
 			if(is_base_value) {
-				out << "GlobalPool* global_pool = 0;" << endl << endl;
 				out << "vnl::Value* create(vnl::Hash32 hash) {@" << endl;
 				out << "switch(hash) {@" << endl;
 				for(Class* sub : sub_classes) {
@@ -556,10 +555,28 @@ public:
 				out << "default: return 0;" << endl;
 				out << "$}" << endl << "$}" << endl << endl;
 				
+				out << "vnl::Map<vnl::Hash32, vnl::info::Type> get_type_info() {@" << endl;
+				out << "vnl::Map<vnl::Hash32, vnl::info::Type> res;" << endl;
+				for(Class* sub : sub_classes) {
+					out << "{@" << endl << "vnl::info::Type& info = res[\"" << full(sub) << "\"];" << endl;
+					out << "info.name = \"" << full(sub) << "\";" << endl;
+					for(Field* field : sub->all_fields) {
+						out << "{@" << endl << "vnl::info::Field& field = *info.fields.push_back();" << endl;
+						out << "field.name = \"" << field->name << "\";" << endl;
+						out << "field.type = \"" << full(field->type) << "\";" << endl;
+						if(!field->value.empty()) {
+							out << "vnl::to_string(field.value, " << field->value << ");" << endl;
+						}
+						out << "$}" << endl;
+					}
+					out << "$}" << endl;
+				}
+				out << "return res;" << endl << "$}" << endl << endl;
+				
 				out << "vnl::Array<vnl::String> get_class_names() {@" << endl;
 				out << "vnl::Array<vnl::String> res;" << endl;
 				for(Class* sub : sub_classes) {
-					out << "res.push_back(\"" << sub->get_full_name() << "\");" << endl;
+					out << "res.push_back(\"" << full(sub) << "\");" << endl;
 				}
 				out << "return res;" << endl << "$}" << endl << endl;
 			}
@@ -612,7 +629,7 @@ public:
 			out << "return vnl::clone<" << type_name << ">(*this);" << endl << "$}" << endl << endl;
 			out << "void " << scope << "destroy() {@" << endl;
 			out << "this->" << type_name << "::~" << type_name << "();" << endl;
-			out << "return vnl::global_pool->push_back(this, sizeof(" << type_name << "));" << endl << "$}" << endl << endl;
+			out << "return vnl::internal::global_pool_->push_back(this, sizeof(" << type_name << "));" << endl << "$}" << endl << endl;
 		}
 		
 		vector<Field*> all_fields;
@@ -647,7 +664,7 @@ public:
 		}
 		
 		if(p_struct || p_iface) {
-			out << header << "int " << scope << "field_index(vnl::Hash32 _hash) const {@" << endl;
+			out << header << "int " << scope << "get_field_index(vnl::Hash32 _hash) const {@" << endl;
 			out << "switch(_hash) {@" << endl;
 			int index = 0;
 			for(Field* field : all_fields) {
@@ -656,7 +673,7 @@ public:
 			out << "default: return -1;" << endl;
 			out << "$}" << endl << "$}" << endl << endl;
 			
-			out << header << "const char* " << scope << "field_name(int _index) const {@" << endl;
+			out << header << "const char* " << scope << "get_field_name(int _index) const {@" << endl;
 			out << "switch(_index) {@" << endl;
 			index = 0;
 			for(Field* field : all_fields) {
@@ -671,7 +688,6 @@ public:
 			for(Field* field : all_fields) {
 				out << "case " << index++ << ": vnl::to_string(_str, " << field->name << "); break;" << endl;
 			}
-			out << "default: _str << \"{}\";" << endl;
 			out << "$}" << endl << "$}" << endl << endl;
 			
 			out << header << "void " << scope << "set_field(int _index, const vnl::String& _str) {@" << endl;
@@ -938,7 +954,7 @@ public:
 		sort(types.begin(), types.end(), [](Class* a, Class* b) -> bool {
 			return a->get_full_name() < b->get_full_name();
 		});
-		out << "switch(_sample->vni_hash()) {" << endl;
+		out << "switch(_sample->get_vni_hash()) {" << endl;
 		for(Class* p_class : types) {
 			out << "case " << hash32_of(p_class) << ": ";
 			out << "handle(*((" << full(p_class) << "*)_sample), " << payload << "); return true;" << endl;

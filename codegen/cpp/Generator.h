@@ -558,12 +558,12 @@ public:
 				out << "vnl::Map<vnl::Hash32, vnl::info::Type> get_type_info() {@" << endl;
 				out << "vnl::Map<vnl::Hash32, vnl::info::Type> res;" << endl;
 				for(Class* sub : sub_classes) {
-					out << "{@" << endl << "vnl::info::Type& info = res[\"" << full(sub) << "\"];" << endl;
-					out << "info.name = \"" << full(sub) << "\";" << endl;
+					out << "{@" << endl << "vnl::info::Type& info = res[\"" << sub->get_full_name() << "\"];" << endl;
+					out << "info.name = \"" << sub->get_full_name() << "\";" << endl;
 					for(Field* field : sub->all_fields) {
 						out << "{@" << endl << "vnl::info::Field& field = *info.fields.push_back();" << endl;
 						out << "field.name = \"" << field->name << "\";" << endl;
-						out << "field.type = \"" << full(field->type) << "\";" << endl;
+						out << "field.type = \"" << subs(full(field->type), "::", ".") << "\";" << endl;
 						if(!field->value.empty()) {
 							out << "vnl::to_string(field.value, " << field->value << ");" << endl;
 						}
@@ -576,7 +576,7 @@ public:
 				out << "vnl::Array<vnl::String> get_class_names() {@" << endl;
 				out << "vnl::Array<vnl::String> res;" << endl;
 				for(Class* sub : sub_classes) {
-					out << "res.push_back(\"" << full(sub) << "\");" << endl;
+					out << "res.push_back(\"" << sub->get_full_name() << "\");" << endl;
 				}
 				out << "return res;" << endl << "$}" << endl << endl;
 			}

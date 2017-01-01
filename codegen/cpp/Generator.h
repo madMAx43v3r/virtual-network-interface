@@ -91,33 +91,51 @@ public:
 		return subs(name, ".", "::");
 	}
 	
-	static string full(Type* type) {
-		if(type) {
-			return subs(type->get_full_name(), ".", "::");
-		}
-		return string();
-	}
-	
-	static string full(TypeName* name) {
-		if(name) {
-			return subs(full(name->type), ".", "::") + get_tmpl(name);
-		}
-		return string();
-	}
-	
-	static string full(Base* base) {
+	static string full(Base* base, bool constant = false) {
+		TYPE_TREE(base);
+		Bool* p_bool = dynamic_cast<Bool*>(base);
+		Integer* p_int = dynamic_cast<Integer*>(base);
+		Real* p_real = dynamic_cast<Real*>(base);
+		Vector* p_vector = dynamic_cast<Vector*>(base);
 		Type* p_type = dynamic_cast<Type*>(base);
-		if(p_type) {
-			return full(p_type);
+		TypeName* p_typename = dynamic_cast<TypeName*>(base);
+		Generic* p_generic = dynamic_cast<Generic*>(base);
+		string res = constant ? "const " : "";
+		if(p_typename) {
+			bool is_const = p_typename->is_const && !dynamic_cast<Method*>(base);
+			res += subs(full(p_typename->type, is_const), ".", "::") + get_tmpl(p_typename);
+		} else if(p_vector) {
+			ostringstream ss;
+			ss << "vnl::Vector<" << full(p_vector->type) << ", " << p_vector->size << ">";
+			res += ss.str();
+		} else if(p_bool) {
+			res += "bool";
+		} else if(p_int) {
+			switch(p_int->size) {
+				case 1: res += "int8_t"; break;
+				case 2: res += "int16_t"; break;
+				case 4: res += "int32_t"; break;
+				case 8: res += "int64_t"; break;
+				default: res += "?"; break;
+			}
+		} else if(p_real) {
+			switch(p_real->size) {
+				case 4: res += "float"; break;
+				case 8: res += "double"; break;
+				default: res += "?"; break;
+			}
+		} else if(p_void) {
+			res += "void";
+		} else if(p_generic) {
+			res += p_generic->name;
+		} else if(p_type) {
+			if(p_type->get_full_name() == "vnl.String" && constant) {
+				res += "char*";
+			} else {
+				res += subs(p_type->get_full_name(), ".", "::");
+			}
 		}
-		TypeName* p_name = dynamic_cast<TypeName*>(base);
-		if(p_name) {
-			return full(p_name);
-		}
-		if(base) {
-			return base->get_name();
-		}
-		return string();
+		return res;
 	}
 	
 	static string get_tmpl(TypeName* name) {
@@ -179,57 +197,8 @@ public:
 		}
 	}
 	
-	void echo_type(Base* type, bool constant = false) {
-		TYPE_TREE(type);
-		Bool* p_bool = dynamic_cast<Bool*>(type);
-		Integer* p_int = dynamic_cast<Integer*>(type);
-		Real* p_real = dynamic_cast<Real*>(type);
-		Vector* p_vector = dynamic_cast<Vector*>(type);
-		Type* p_type = dynamic_cast<Type*>(type);
-		TypeName* p_typename = dynamic_cast<TypeName*>(type);
-		Generic* p_generic = dynamic_cast<Generic*>(type);
-		if(p_typename) {
-			echo_type(p_typename->type, constant);
-			out << get_tmpl(p_typename);
-		} else if(p_object) {
-			out << "vnl::Address";
-		} else if(p_iface) {
-			if(p_iface->get_full_name() == "vnl.String" && constant) {
-				out << "char*";
-			} else {
-				out << full(p_iface);
-			}
-		} else if(p_struct) {
-			out << full(p_struct);
-		} else if(p_enum) {
-			out << full(p_enum);
-		} else if(p_type) {
-			out << full(p_type);
-		} else if(p_vector) {
-			out << "vnl::Vector<";
-			echo_type(p_vector->type);
-			out << ", " << p_vector->size << ">";
-		} else if(p_bool) {
-			out << "bool";
-		} else if(p_int) {
-			switch(p_int->size) {
-				case 1: out << "int8_t"; break;
-				case 2: out << "int16_t"; break;
-				case 4: out << "int32_t"; break;
-				case 8: out << "int64_t"; break;
-				default: out << "?"; break;
-			}
-		} else if(p_real) {
-			switch(p_real->size) {
-				case 4: out << "float"; break;
-				case 8: out << "double"; break;
-				default: out << "?"; break;
-			}
-		} else if(p_void) {
-			out << "void";
-		} else if(p_generic) {
-			out << p_generic->name;
-		}
+	void echo_type(Base* type) {
+		out << full(type);
 	}
 	
 	void echo_ref_to(Field* field, bool add_const = true) {
@@ -360,8 +329,8 @@ public:
 				constants = p_iface->constants;
 			}
 			for(Field* field : constants) {
-				out << "static const ";
-				echo_type(field, true);
+				out << "static ";
+				echo_type(field);
 				out << " " << field->name;
 				if(dynamic_cast<Primitive*>(field->type)) {
 					out << " = " << field->value;
@@ -563,7 +532,13 @@ public:
 					for(Field* field : sub->all_fields) {
 						out << "{@" << endl << "vnl::info::Field& field = *info.fields.push_back();" << endl;
 						out << "field.name = \"" << field->name << "\";" << endl;
-						out << "field.type = \"" << subs(full(field->type), "::", ".") << "\";" << endl;
+						string type_name;
+						if(dynamic_cast<Type*>(field->type)) {
+							type_name = ((Type*)field->type)->get_full_name();
+						} else {
+							type_name = field->type->get_name();
+						}
+						out << "field.type = \"" << type_name << "\";" << endl;
 						if(!field->value.empty()) {
 							out << "vnl::to_string(field.value, " << field->value << ");" << endl;
 						}
@@ -611,8 +586,8 @@ public:
 				constants = p_iface->constants;
 			}
 			for(Field* field : constants) {
-				out << header << "const ";
-				echo_type(field, true);
+				out << header;
+				echo_type(field);
 				out << " " << scope << field->name;
 				if(dynamic_cast<Primitive*>(field->type) == 0) {
 					out << " = " << field->value;

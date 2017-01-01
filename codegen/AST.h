@@ -161,6 +161,7 @@ class TypeName : public Base {
 public:
 	Base* type = 0;
 	vector<Base*> tmpl;
+	bool is_const = false;
 	
 	TypeName() {}
 	TypeName(Base* type) : type(type) {}
@@ -174,7 +175,6 @@ class Field : public TypeName {
 public:
 	string name;
 	string value;
-	bool is_const = false;
 	
 	virtual string get_name() { return name; }
 	virtual uint64_t get_hash() { return hash64(name); }
@@ -185,7 +185,6 @@ class Method : public TypeName {
 public:
 	string name;
 	vector<Field*> params;
-	bool is_const = false;
 	bool is_handle = false;
 	
 	virtual string get_name() { return name; }

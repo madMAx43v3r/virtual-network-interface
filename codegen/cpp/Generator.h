@@ -524,9 +524,26 @@ public:
 				out << "default: return 0;" << endl;
 				out << "$}" << endl << "$}" << endl << endl;
 				
+				out << "vnl::Array<vnl::String> get_class_names() {@" << endl;
+				out << "vnl::Array<vnl::String> res;" << endl;
+				for(Class* sub : sub_classes) {
+					out << "res.push_back(\"" << sub->get_full_name() << "\");" << endl;
+				}
+				out << "return res;" << endl << "$}" << endl << endl;
+				
+				vector<Struct*> all_structs;
+				for(Class* sub : sub_classes) {
+					all_structs.push_back(sub);
+				}
+				for(auto entry : INDEX) {
+					Struct* p_struct = dynamic_cast<Struct*>(entry.second);
+					if(p_struct && !dynamic_cast<Class*>(p_struct)) {
+						all_structs.push_back(p_struct);
+					}
+				}
 				out << "vnl::Map<vnl::Hash32, vnl::info::Type> get_type_info() {@" << endl;
 				out << "vnl::Map<vnl::Hash32, vnl::info::Type> res;" << endl;
-				for(Class* sub : sub_classes) {
+				for(Struct* sub : all_structs) {
 					out << "{@" << endl << "vnl::info::Type& info = res[\"" << sub->get_full_name() << "\"];" << endl;
 					out << "info.hash = " << hash32_of(sub) << ";" << endl;
 					out << "info.name = \"" << sub->get_full_name() << "\";" << endl;
@@ -547,13 +564,6 @@ public:
 						out << "$}" << endl;
 					}
 					out << "$}" << endl;
-				}
-				out << "return res;" << endl << "$}" << endl << endl;
-				
-				out << "vnl::Array<vnl::String> get_class_names() {@" << endl;
-				out << "vnl::Array<vnl::String> res;" << endl;
-				for(Class* sub : sub_classes) {
-					out << "res.push_back(\"" << sub->get_full_name() << "\");" << endl;
 				}
 				out << "return res;" << endl << "$}" << endl << endl;
 			}

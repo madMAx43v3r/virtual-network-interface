@@ -528,9 +528,11 @@ public:
 				out << "vnl::Map<vnl::Hash32, vnl::info::Type> res;" << endl;
 				for(Class* sub : sub_classes) {
 					out << "{@" << endl << "vnl::info::Type& info = res[\"" << sub->get_full_name() << "\"];" << endl;
+					out << "info.hash = " << hash32_of(sub) << ";" << endl;
 					out << "info.name = \"" << sub->get_full_name() << "\";" << endl;
 					for(Field* field : sub->all_fields) {
 						out << "{@" << endl << "vnl::info::Field& field = *info.fields.push_back();" << endl;
+						out << "field.hash = " << hash32_of(field) << ";" << endl;
 						out << "field.name = \"" << field->name << "\";" << endl;
 						string type_name;
 						if(dynamic_cast<Type*>(field->type)) {

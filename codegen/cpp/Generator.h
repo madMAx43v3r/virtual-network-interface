@@ -532,13 +532,18 @@ public:
 				out << "return res;" << endl << "$}" << endl << endl;
 				
 				vector<Struct*> all_structs;
+				vector<Enum*> all_enums;
 				for(Class* sub : sub_classes) {
 					all_structs.push_back(sub);
 				}
 				for(auto entry : INDEX) {
 					Struct* p_struct = dynamic_cast<Struct*>(entry.second);
+					Enum* p_enum = dynamic_cast<Enum*>(entry.second);
 					if(p_struct && !dynamic_cast<Class*>(p_struct)) {
 						all_structs.push_back(p_struct);
+					}
+					if(p_enum) {
+						all_enums.push_back(p_enum);
 					}
 				}
 				out << "vnl::Map<vnl::Hash32, vnl::info::Type> get_type_info() {@" << endl;
@@ -547,6 +552,10 @@ public:
 					out << "{@" << endl << "vnl::info::Type& info = res[\"" << sub->get_full_name() << "\"];" << endl;
 					out << "info.hash = " << hash32_of(sub) << ";" << endl;
 					out << "info.name = \"" << sub->get_full_name() << "\";" << endl;
+					out << "info.is_struct = true;" << endl;
+					if(dynamic_cast<Class*>(sub)) {
+						out << "info.is_class = true;" << endl;
+					}
 					for(Field* field : sub->all_fields) {
 						out << "{@" << endl << "vnl::info::Field& field = *info.fields.push_back();" << endl;
 						out << "field.hash = " << hash32_of(field) << ";" << endl;
@@ -562,6 +571,16 @@ public:
 							out << "vnl::to_string(field.value, " << field->value << ");" << endl;
 						}
 						out << "$}" << endl;
+					}
+					out << "$}" << endl;
+				}
+				for(Enum* sub : all_enums) {
+					out << "{@" << endl << "vnl::info::Type& info = res[\"" << sub->get_full_name() << "\"];" << endl;
+					out << "info.hash = " << hash32_of(sub) << ";" << endl;
+					out << "info.name = \"" << sub->get_full_name() << "\";" << endl;
+					out << "info.is_enum = true;" << endl;
+					for(string& value : sub->values) {
+						out << "info.symbols.push_back(\"" << value << "\");" << endl;
 					}
 					out << "$}" << endl;
 				}

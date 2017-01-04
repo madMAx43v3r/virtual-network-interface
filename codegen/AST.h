@@ -144,6 +144,16 @@ public:
 };
 
 
+class Generic : public Base {
+public:
+	string name;
+	
+	Generic(string name) : name(name) {}
+	
+	virtual string get_name() { return name; }
+};
+
+
 class Vector : public Base {
 public:
 	Base* type = 0;
@@ -170,6 +180,9 @@ public:
 		Vector* p_vector = dynamic_cast<Vector*>(type);
 		if(p_vector) {
 			tmpl.push_back(p_vector->type);
+			ostringstream ss;
+			ss << p_vector->size;
+			tmpl.push_back(new Generic(ss.str()));
 		}
 	}
 	
@@ -204,16 +217,6 @@ public:
 			field->pre_compile();
 		}
 	}
-};
-
-
-class Generic : public Base {
-public:
-	string name;
-	
-	Generic(string name) : name(name) {}
-	
-	virtual string get_name() { return name; }
 };
 
 

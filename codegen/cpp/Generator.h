@@ -105,9 +105,7 @@ public:
 			bool is_const = p_typename->is_const && !dynamic_cast<Method*>(base);
 			res += subs(full(p_typename->type, is_const), ".", "::") + get_tmpl(p_typename);
 		} else if(p_vector) {
-			ostringstream ss;
-			ss << "vnl::Vector<" << full(p_vector->type) << ", " << p_vector->size << ">";
-			res += ss.str();
+			res += "vnl::Vector";
 		} else if(p_bool) {
 			res += "bool";
 		} else if(p_int) {

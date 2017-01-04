@@ -700,9 +700,9 @@ public:
 			out << endl << header << "void " << scope << "to_string_ex(vnl::String& str) const {@" << endl;
 			out << "switch(value) {@" << endl;
 			for(string& field : p_enum->values) {
-				out << "case " << hash32_of(field) << ": str << \"\\\"" << field << "\\\"\"; break;" << endl;
+				out << "case " << hash32_of(field) << ": str << \"" << field << "\"; break;" << endl;
 			}
-			out << "default: str << \"\\\"?\\\"\";" << endl;
+			out << "default: str << \"?\";" << endl;
 			out << "$}" << endl << "$}" << endl << endl;
 		}
 		

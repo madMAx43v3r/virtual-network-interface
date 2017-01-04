@@ -138,6 +138,13 @@ public:
 		return res;
 	}
 	
+	static string get_full_name(Base* type) {
+		if(dynamic_cast<Type*>(type)) {
+			return ((Type*)type)->get_full_name();
+		}
+		return type->get_name();
+	}
+	
 	static string get_tmpl(TypeName* name) {
 		string str;
 		if(name && name->tmpl.size()) {
@@ -531,60 +538,7 @@ public:
 				}
 				out << "return res;" << endl << "$}" << endl << endl;
 				
-				vector<Struct*> all_structs;
-				vector<Enum*> all_enums;
-				for(Class* sub : sub_classes) {
-					all_structs.push_back(sub);
-				}
-				for(auto entry : INDEX) {
-					Struct* p_struct = dynamic_cast<Struct*>(entry.second);
-					Enum* p_enum = dynamic_cast<Enum*>(entry.second);
-					if(p_struct && !dynamic_cast<Class*>(p_struct)) {
-						all_structs.push_back(p_struct);
-					}
-					if(p_enum) {
-						all_enums.push_back(p_enum);
-					}
-				}
-				out << "vnl::Map<vnl::Hash32, vnl::info::Type> get_type_info() {@" << endl;
-				out << "vnl::Map<vnl::Hash32, vnl::info::Type> res;" << endl;
-				for(Struct* sub : all_structs) {
-					out << "{@" << endl << "vnl::info::Type& info = res[\"" << sub->get_full_name() << "\"];" << endl;
-					out << "info.hash = " << hash32_of(sub) << ";" << endl;
-					out << "info.name = \"" << sub->get_full_name() << "\";" << endl;
-					out << "info.is_struct = true;" << endl;
-					if(dynamic_cast<Class*>(sub)) {
-						out << "info.is_class = true;" << endl;
-					}
-					for(Field* field : sub->all_fields) {
-						out << "{@" << endl << "vnl::info::Field& field = *info.fields.push_back();" << endl;
-						out << "field.hash = " << hash32_of(field) << ";" << endl;
-						out << "field.name = \"" << field->name << "\";" << endl;
-						string type_name;
-						if(dynamic_cast<Type*>(field->type)) {
-							type_name = ((Type*)field->type)->get_full_name();
-						} else {
-							type_name = field->type->get_name();
-						}
-						out << "field.type = \"" << type_name << "\";" << endl;
-						if(!field->value.empty()) {
-							out << "vnl::to_string(field.value, " << field->value << ");" << endl;
-						}
-						out << "$}" << endl;
-					}
-					out << "$}" << endl;
-				}
-				for(Enum* sub : all_enums) {
-					out << "{@" << endl << "vnl::info::Type& info = res[\"" << sub->get_full_name() << "\"];" << endl;
-					out << "info.hash = " << hash32_of(sub) << ";" << endl;
-					out << "info.name = \"" << sub->get_full_name() << "\";" << endl;
-					out << "info.is_enum = true;" << endl;
-					for(string& value : sub->values) {
-						out << "info.symbols.push_back(\"" << value << "\");" << endl;
-					}
-					out << "$}" << endl;
-				}
-				out << "return res;" << endl << "$}" << endl << endl;
+				generate_type_info();
 			}
 		}
 		
@@ -757,6 +711,104 @@ public:
 		if(!is_template) {
 			namespace_end();
 		}
+	}
+	
+	void generate_type_info() {
+		vector<Struct*> all_structs;
+		vector<Enum*> all_enums;
+		vector<Interface*> all_interfaces;
+		for(auto entry : INDEX) {
+			Struct* p_struct = dynamic_cast<Struct*>(entry.second);
+			Enum* p_enum = dynamic_cast<Enum*>(entry.second);
+			Interface* p_interface = dynamic_cast<Interface*>(entry.second);
+			if(p_struct) {
+				all_structs.push_back(p_struct);
+			}
+			if(p_enum) {
+				all_enums.push_back(p_enum);
+			}
+			if(p_interface) {
+				all_interfaces.push_back(p_interface);
+			}
+		}
+		out << "vnl::Map<vnl::Hash32, vnl::info::Type> get_type_info() {@" << endl;
+		out << "vnl::Map<vnl::Hash32, vnl::info::Type> res;" << endl;
+		for(Struct* sub : all_structs) {
+			out << "{@" << endl << "vnl::info::Type& info = res[\"" << sub->get_full_name() << "\"];" << endl;
+			out << "info.hash = " << hash32_of(sub) << ";" << endl;
+			out << "info.name = \"" << sub->get_full_name() << "\";" << endl;
+			out << "info.is_struct = true;" << endl;
+			TypeName* super = sub->super;
+			if(dynamic_cast<Class*>(sub)) {
+				out << "info.is_class = true;" << endl;
+				super = ((Class*)sub)->super;
+			}
+			if(super) {
+				out << "info.super.hash = " << hash32_of(super->type) << ";" << endl;
+				out << "info.super.name = \"" << get_full_name(super->type) << "\";" << endl;
+				for(Base* tmpl : super->tmpl) {
+					out << "info.super.generics.push_back(\"" << get_full_name(tmpl) << "\");" << endl;
+				}
+			}
+			for(Field* field : sub->all_fields) {
+				out << "{@" << endl << "vnl::info::Field& field = *info.fields.push_back();" << endl;
+				out << "field.hash = " << hash32_of(field) << ";" << endl;
+				out << "field.name = \"" << field->name << "\";" << endl;
+				out << "field.type.hash = " << hash32_of(field->type) << ";" << endl;
+				out << "field.type.name = \"" << get_full_name(field->type) << "\";" << endl;
+				for(Base* tmpl : field->tmpl) {
+					out << "field.type.generics.push_back(\"" << get_full_name(tmpl) << "\");" << endl;
+				}
+				if(!field->value.empty()) {
+					out << "vnl::to_string(field.value, " << field->value << ");" << endl;
+				}
+				out << "$}" << endl;
+			}
+			out << "$}" << endl;
+		}
+		for(Enum* sub : all_enums) {
+			out << "{@" << endl << "vnl::info::Type& info = res[\"" << sub->get_full_name() << "\"];" << endl;
+			out << "info.hash = " << hash32_of(sub) << ";" << endl;
+			out << "info.name = \"" << sub->get_full_name() << "\";" << endl;
+			out << "info.is_enum = true;" << endl;
+			for(string& value : sub->values) {
+				out << "info.symbols.push_back(\"" << value << "\");" << endl;
+			}
+			out << "$}" << endl;
+		}
+		for(Interface* sub : all_interfaces) {
+			out << "{@" << endl << "vnl::info::Type& info = res[\"" << sub->get_full_name() << "\"];" << endl;
+			out << "info.hash = " << hash32_of(sub) << ";" << endl;
+			out << "info.name = \"" << sub->get_full_name() << "\";" << endl;
+			out << "info.is_interface = true;" << endl;
+			TypeName* super = sub->super;
+			if(dynamic_cast<Object*>(sub)) {
+				out << "info.is_object = true;" << endl;
+				super = ((Object*)sub)->super;
+			}
+			if(super) {
+				out << "info.super.hash = " << hash32_of(super->type) << ";" << endl;
+				out << "info.super.name = \"" << get_full_name(super->type) << "\";" << endl;
+				for(Base* tmpl : super->tmpl) {
+					out << "info.super.generics.push_back(\"" << get_full_name(tmpl) << "\");" << endl;
+				}
+			}
+			for(Method* method : sub->methods) {
+				out << "{@" << endl << "vnl::info::Method& method = *info.methods.push_back();" << endl;
+				out << "method.hash = " << hash32_of(method) << ";" << endl;
+				out << "method.name = \"" << method->name << "\";" << endl;
+				out << "method.is_const = " << (method->is_const ? "true" : "false") << ";" << endl;
+				out << "method.type.hash = " << hash32_of(method->type) << ";" << endl;
+				out << "method.type.name = \"" << get_full_name(method->type) << "\";" << endl;
+				for(Base* tmpl : method->tmpl) {
+					out << "method.type.generics.push_back(\"" << get_full_name(tmpl) << "\");" << endl;
+				}
+				// TODO: params
+				out << "$}" << endl;
+			}
+			out << "$}" << endl;
+		}
+		out << "return res;" << endl << "$}" << endl << endl;
 	}
 	
 	void generate_writer(Interface* p_iface, string super) {

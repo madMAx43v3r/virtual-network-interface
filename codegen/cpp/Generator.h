@@ -341,6 +341,7 @@ public:
 				for(string& value : p_enum->values) {
 					out << "static const uint32_t " << value << " = " << hash32_of(value) << ";" << endl;
 				}
+				out << endl << p_enum->name << "(uint32_t val) : vnl::Enum(val) { };" << endl;
 				out << endl << "operator uint32_t() const {@" << endl << "return value;" << endl << "$}" << endl << endl;
 				out << p_enum->name << "& operator=(const uint32_t& val) {@" << endl;
 				out << "value = val;" << endl << "return *this;" << endl << "$}";

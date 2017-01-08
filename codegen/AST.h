@@ -144,15 +144,23 @@ public:
 };
 
 
+class Generic : public Base {
+public:
+	string name;
+	
+	Generic(string name) : name(name) {}
+	
+	virtual string get_name() { return name; }
+};
+
+
 class Vector : public Base {
 public:
 	Base* type = 0;
 	int size = 0;
 	
 	virtual string get_name() {
-		std::ostringstream ss;
-		ss << type->get_name() << "[" << size << "]";
-		return ss.str();
+		return "vnl.Vector";
 	}
 };
 
@@ -167,6 +175,16 @@ public:
 	TypeName(Base* type) : type(type) {}
 	
 	virtual string get_name() { return type->get_name(); }
+	
+	virtual void pre_compile() {
+		Vector* p_vector = dynamic_cast<Vector*>(type);
+		if(p_vector) {
+			tmpl.push_back(p_vector->type);
+			ostringstream ss;
+			ss << p_vector->size;
+			tmpl.push_back(new Generic(ss.str()));
+		}
+	}
 	
 };
 
@@ -194,17 +212,11 @@ public:
 		hash.update((uint64_t)params.size());
 		return hash.getValue();
 	}
-};
-
-
-class Generic : public Base {
-public:
-	string name;
-	
-	Generic(string name) : name(name) {}
-	
-	virtual string get_name() { return name; }
-	
+	virtual void pre_compile() {
+		for(Field* field : params) {
+			field->pre_compile();
+		}
+	}
 };
 
 
@@ -237,6 +249,11 @@ public:
 	virtual string get_full_name() { return package->name + "." + name; }
 	virtual uint64_t get_hash() { return hash64(get_full_name()); }
 	
+	virtual void pre_compile() {
+		for(Field* field : constants) {
+			field->pre_compile();
+		}
+	}
 };
 
 
@@ -438,6 +455,7 @@ void Type::import(TypeName* p_name) {
 
 
 void Enum::pre_compile() {
+	Type::pre_compile();
 	if(!super && get_full_name() != "vnl.Enum") {
 		super = new TypeName(resolve<Enum>("vnl.Enum"));
 	}
@@ -445,8 +463,12 @@ void Enum::pre_compile() {
 
 
 void Struct::pre_compile() {
+	Type::pre_compile();
 	if(!super && get_full_name() != "vnl.Value") {
 		super = new TypeName(resolve<Struct>("vnl.Value"));
+	}
+	for(Field* field : fields) {
+		field->pre_compile();
 	}
 }
 
@@ -461,6 +483,7 @@ void Struct::compile() {
 
 
 void Class::pre_compile() {
+	Struct::pre_compile();
 	if(!super && get_full_name() != "vnl.Value") {
 		super = new TypeName(resolve<Class>("vnl.Value"));
 	}
@@ -488,8 +511,15 @@ void Class::compile() {
 
 
 void Interface::pre_compile() {
+	Type::pre_compile();
 	if(!super && get_full_name() != "vnl.Interface") {
 		super = new TypeName(resolve<Interface>("vnl.Interface"));
+	}
+	for(Field* field : fields) {
+		field->pre_compile();
+	}
+	for(Method* method : methods) {
+		method->pre_compile();
 	}
 }
 

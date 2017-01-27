@@ -42,9 +42,9 @@ public:
 		out << "cmake_minimum_required(VERSION 2.4)" << endl << endl;
 		out << "include_directories(include/)" << endl << endl;
 		if(make_shared) {
-			out << "ADD_LIBRARY(vni_shared SHARED" << endl;
+			out << "ADD_LIBRARY(\\${TARGET_NAME} SHARED" << endl;
 		} else {
-			out << "ADD_LIBRARY(vni STATIC" << endl;
+			out << "ADD_LIBRARY(\\${TARGET_NAME} STATIC" << endl;
 		}
 		for(string file : source_files) {
 			out << "\t" << file << endl;

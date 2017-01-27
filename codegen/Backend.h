@@ -87,13 +87,19 @@ public:
 		string text;
 		int stack = 0;
 		bool newline = false;
+		bool escape = false;
 		for(char c : input) {
-			if(c == '@') {
-				stack++;
-				continue;
-			} else if(c == '$') {
-				stack--;
-				continue;
+			if(!escape) {
+				if(c == '@') {
+					stack++;
+					continue;
+				} else if(c == '$') {
+					stack--;
+					continue;
+				} else if(c == '\\') {
+					escape = true;
+					continue;
+				}
 			}
 			if(newline) {
 				for(int i = 0; i < stack; ++i) {
@@ -105,6 +111,7 @@ public:
 				newline = true;
 			}
 			text += c;
+			escape = false;
 		}
 		return text;
 	}

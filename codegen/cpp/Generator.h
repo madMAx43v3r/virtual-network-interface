@@ -733,12 +733,15 @@ public:
 				out << "const uint32_t " << scope << value << ";" << endl;
 			}
 			out << endl << header << "void " << scope << "to_string_ex(vnl::String& str) const {@" << endl;
+			out << "str.push_back('\"');" << endl;
 			out << "switch(value) {@" << endl;
 			for(string& field : p_enum->values) {
 				out << "case " << hash32_of(field) << ": str << \"" << field << "\"; break;" << endl;
 			}
 			out << "default: str << \"?\";" << endl;
-			out << "$}" << endl << "$}" << endl << endl;
+			out << "$}" << endl;
+			out << "str.push_back('\"');" << endl;
+			out << "$}" << endl << endl;
 		}
 		
 		if(!is_template) {

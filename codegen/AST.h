@@ -435,13 +435,7 @@ void gather_methods(T* next, vector<Method*>& vec) {
 
 
 void Type::import(Type* p_type) {
-	if(!p_type) {
-		return;
-	}
-	TypeName* p_name = dynamic_cast<TypeName*>(p_type);
-	if(p_name) {
-		import(p_name);
-	} else {
+	if(p_type) {
 		imports.insert(p_type);
 	}
 }

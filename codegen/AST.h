@@ -344,7 +344,15 @@ public:
 
 template<typename T>
 static T* resolve(const string& ident) {
-	Base* res = INDEX[ident];
+	Base* res = 0;
+	if(ident.size() && ident.back() == '*') {
+		TypeName* type = new TypeName(resolve("Pointer"));
+		type->tmpl.push_back(resolve(ident.substr(0, ident.size()-1)));
+		res = type;
+	}
+	if(!res) {
+		res = INDEX[ident];
+	}
 	if(!res && TYPE) {
 		Interface* p_iface = dynamic_cast<Interface*>(TYPE);
 		if(p_iface) {
@@ -427,15 +435,24 @@ void gather_methods(T* next, vector<Method*>& vec) {
 
 
 void Type::import(Type* p_type) {
-	imports.insert(p_type);
+	if(!p_type) {
+		return;
+	}
+	TypeName* p_name = dynamic_cast<TypeName*>(p_type);
+	if(p_name) {
+		import(p_name);
+	} else {
+		imports.insert(p_type);
+	}
 }
 
 void Type::import(TypeName* p_name) {
-	Type* p_type = dynamic_cast<Type*>(p_name->type);
-	Vector* p_vector = dynamic_cast<Vector*>(p_name->type);
-	if(p_type) {
-		import(p_type);
+	if(!p_name) {
+		return;
 	}
+	import(dynamic_cast<Type*>(p_name->type));
+	import(dynamic_cast<TypeName*>(p_name->type));
+	Vector* p_vector = dynamic_cast<Vector*>(p_name->type);
 	if(p_vector) {
 		Type* p_vector_type = dynamic_cast<Type*>(p_vector->type);
 		if(p_vector_type) {

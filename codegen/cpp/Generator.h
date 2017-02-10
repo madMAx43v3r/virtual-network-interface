@@ -583,7 +583,7 @@ public:
 			} else {
 				out << "{@" << endl;
 			}
-		} else if(p_struct || p_enum) {
+		} else if(p_struct || p_iface || p_enum) {
 			out << scope << base_name << "() {@" << endl;
 		}
 		for(Field* field : fields) {
@@ -598,7 +598,7 @@ public:
 				out << "vnl::read_config(domain_, topic_, \"" << field->name << "\", " << field->name << ");" << endl;
 			}
 		}
-		if(p_struct || p_enum || p_object) {
+		if(p_struct || p_iface || p_enum) {
 			out << "$}" << endl << endl;
 		}
 		

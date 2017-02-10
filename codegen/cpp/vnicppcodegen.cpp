@@ -23,13 +23,21 @@ int main(int argc, char** argv) {
 	init_type_system();
 	
 	Compiler<VNIParser> compiler;
+	cpp::Generator generator;
+	
 	for(int i = 1; i < argc; ++i) {
+		if(argv[i][0] == '-') {
+			if(argv[i][1] == 'i') {
+				generator.headers_only = true;
+				cout << "Option: headers_only = true" << endl;
+			}
+			continue;
+		}
 		compiler.root_dirs.push_back(argv[i]);
 	}
 	
 	compiler.compile();
 	
-	cpp::Generator gen;
-	gen.generate_all();
+	generator.generate_all();
 	
 }

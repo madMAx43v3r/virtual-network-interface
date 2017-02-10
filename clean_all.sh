@@ -1,4 +1,4 @@
 #!/bin/bash
 
-rm vnicppcodegen
+rm -rf build
 

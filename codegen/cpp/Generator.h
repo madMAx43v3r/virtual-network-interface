@@ -36,19 +36,21 @@ public:
 	
 	virtual void generate_all() {
 		Backend::generate_all();
-		out.str("");
-		out << "cmake_minimum_required(VERSION 2.4)" << endl << endl;
-		out << "include_directories(include/)" << endl << endl;
-		if(make_shared) {
-			out << "ADD_LIBRARY(\\${TARGET_NAME} SHARED" << endl;
-		} else {
-			out << "ADD_LIBRARY(\\${TARGET_NAME} STATIC" << endl;
+		if(!headers_only) {
+			out.str("");
+			out << "cmake_minimum_required(VERSION 2.4)" << endl << endl;
+			out << "include_directories(include/)" << endl << endl;
+			if(make_shared) {
+				out << "ADD_LIBRARY(\\${TARGET_NAME} SHARED" << endl;
+			} else {
+				out << "ADD_LIBRARY(\\${TARGET_NAME} STATIC" << endl;
+			}
+			for(string file : source_files) {
+				out << "\t" << file << endl;
+			}
+			out << ")" << endl << endl;
+			update("", "CMakeLists.cmake", out.str());
 		}
-		for(string file : source_files) {
-			out << "\t" << file << endl;
-		}
-		out << ")" << endl << endl;
-		update("", "CMakeLists.cmake", out.str());
 	}
 	
 	vector<string> source_files;

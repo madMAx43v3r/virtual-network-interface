@@ -604,6 +604,10 @@ public:
 			out << type_name << "* " << scope << "clone() const {@" << endl;
 			out << "return vnl::clone<" << type_name << ">(*this);" << endl << "$}" << endl << endl;
 			
+			out << "void " << scope << "destroy() {@" << endl;
+			out << "this->" << type_name << "::~" << type_name << "();" << endl;
+			out << "return vnl::internal::global_pool_->push_back(this, sizeof(" << type_name << "));" << endl << "$}" << endl << endl;
+			
 			out << "bool " << scope << "is_assignable(vnl::Hash32 hash) {@" << endl;
 			out << "switch(hash) {@" << endl;
 			for(Class* sub : sub_classes) {
@@ -611,10 +615,6 @@ public:
 			}
 			out << "default: return false;" << endl;
 			out << "$}" << endl << "$}" << endl << endl;
-			
-			out << "void " << scope << "destroy() {@" << endl;
-			out << "this->" << type_name << "::~" << type_name << "();" << endl;
-			out << "return vnl::internal::global_pool_->push_back(this, sizeof(" << type_name << "));" << endl << "$}" << endl << endl;
 			
 			out << "bool " << scope << "assign(const vnl::Value& _value) {@" << endl;
 			out << "switch(_value.get_vni_hash()) {@" << endl;

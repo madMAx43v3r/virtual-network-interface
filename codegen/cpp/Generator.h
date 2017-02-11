@@ -374,7 +374,9 @@ public:
 		
 		if(p_struct) {
 			out << "static " << type_name << "* create();" << endl;
+			out << "static " << type_name << "* create(vnl::Hash32 hash);" << endl;
 			out << "virtual " << type_name << "* clone() const;" << endl;
+			out << "virtual bool is_assignable(vnl::Hash32 hash);" << endl;
 			out << "virtual bool assign(const vnl::Value& _value);" << endl;
 			out << "virtual void raise() const { throw *this; }" << endl;
 			out << "virtual void destroy();" << endl << endl;
@@ -510,24 +512,9 @@ public:
 			}
 			
 			namespace_begin();
-			if(is_base_value) {
-				out << "vnl::Value* create(vnl::Hash32 hash) {@" << endl;
-				out << "switch(hash) {@" << endl;
-				for(Class* sub : sub_classes) {
-					out << "case " << hash32_of(sub) << ": return vnl::create<" << full(sub) << ">();" << endl;
-				}
-				out << "default: return 0;" << endl;
-				out << "$}" << endl << "$}" << endl << endl;
-				
-				out << "vnl::Array<vnl::String> get_class_names() {@" << endl;
-				out << "vnl::Array<vnl::String> res;" << endl;
-				for(Class* sub : sub_classes) {
-					out << "res.push_back(\"" << sub->get_full_name() << "\");" << endl;
-				}
-				out << "return res;" << endl << "$}" << endl << endl;
-				
-				generate_type_info();
-			}
+		}
+		if(p_class) {
+			sub_classes.push_back(p_class);
 		}
 		
 		string scope = base_name;
@@ -606,8 +593,24 @@ public:
 			out << type_name << "* " << scope << "create() {@" << endl;
 			out << "return vnl::create<" << type_name << ">();" << endl << "$}" << endl << endl;
 			
+			out << type_name << "* " << scope << "create(vnl::Hash32 hash) {@" << endl;
+			out << "switch(hash) {@" << endl;
+			for(Class* sub : sub_classes) {
+				out << "case " << hash32_of(sub) << ": return vnl::create<" << full(sub) << ">();" << endl;
+			}
+			out << "default: return 0;" << endl;
+			out << "$}" << endl << "$}" << endl << endl;
+			
 			out << type_name << "* " << scope << "clone() const {@" << endl;
 			out << "return vnl::clone<" << type_name << ">(*this);" << endl << "$}" << endl << endl;
+			
+			out << "bool " << scope << "is_assignable(vnl::Hash32 hash) {@" << endl;
+			out << "switch(hash) {@" << endl;
+			for(Class* sub : sub_classes) {
+				out << "case " << hash32_of(sub) << ": return true;" << endl;
+			}
+			out << "default: return false;" << endl;
+			out << "$}" << endl << "$}" << endl << endl;
 			
 			out << "void " << scope << "destroy() {@" << endl;
 			out << "this->" << type_name << "::~" << type_name << "();" << endl;
@@ -615,10 +618,10 @@ public:
 			
 			out << "bool " << scope << "assign(const vnl::Value& _value) {@" << endl;
 			out << "switch(_value.get_vni_hash()) {@" << endl;
-			out << "case " << hash32_of(p_type) << ": *this = (const " << type_name << "&)_value; return true;" << endl;
 			for(Class* sub : sub_classes) {
-				out << "case " << hash32_of(sub) << ": *this = (const " << full(sub) << "&)_value; return true;" << endl;
+				out << "case " << hash32_of(sub) << ":" << endl;
 			}
+			out << "\t*this = (const " << type_name << "&)_value; return true;" << endl;
 			out << "default: return false;" << endl;
 			out << "$}" << endl << "$}" << endl << endl;
 		}
@@ -757,6 +760,17 @@ public:
 			out << "$}" << endl;
 			out << "str.push_back('\"');" << endl;
 			out << "$}" << endl << endl;
+		}
+		
+		if(is_base_value && p_class) {
+			out << "vnl::Array<vnl::String> get_class_names() {@" << endl;
+			out << "vnl::Array<vnl::String> res;" << endl;
+			for(Class* sub : sub_classes) {
+				out << "res.push_back(\"" << sub->get_full_name() << "\");" << endl;
+			}
+			out << "return res;" << endl << "$}" << endl << endl;
+			
+			generate_type_info();
 		}
 		
 		if(!is_template) {

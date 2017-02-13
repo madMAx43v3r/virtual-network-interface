@@ -27,8 +27,8 @@ namespace cpp {
 
 class Generator : public Backend {
 public:
-	bool make_shared = false;
 	bool headers_only = false;
+	bool cmake_only = false;
 	
 	Generator() {
 		whitelist.insert("CMakeLists.txt");
@@ -38,34 +38,44 @@ public:
 		Backend::generate_all();
 		if(!headers_only) {
 			out.str("");
-			out << "cmake_minimum_required(VERSION 2.4)" << endl << endl;
-			out << "include_directories(include/)" << endl << endl;
-			if(make_shared) {
-				out << "ADD_LIBRARY(\\${TARGET_NAME} SHARED" << endl;
-			} else {
-				out << "ADD_LIBRARY(\\${TARGET_NAME} STATIC" << endl;
+			out << "set(VNI_INPUT_FILES@" << endl;
+			for(string file : vni_files) {
+				out << file << endl;
 			}
+			out << "$)" << endl << endl;
+			out << "set(VNI_OUTPUT_FILES_HEADER@" << endl;
+			for(string file : header_files) {
+				out << root << file << endl;
+			}
+			out << "$)" << endl << endl;
+			out << "set(VNI_OUTPUT_FILES_SOURCE@" << endl;
 			for(string file : source_files) {
-				out << "\t" << file << endl;
+				out << root << file << endl;
 			}
-			out << ")" << endl << endl;
+			out << "$)" << endl << endl;
 			update("", "CMakeLists.cmake", out.str());
 		}
 	}
 	
+	set<string> vni_files;
+	vector<string> header_files;
 	vector<string> source_files;
 	
 	virtual void generate(Type* type) {
 		Interface* p_iface = dynamic_cast<Interface*>(type);
 		Object* p_object = dynamic_cast<Object*>(type);
 		is_template = p_iface && p_iface->generic.size();
+		vni_files.insert(type->file);
 		
 		// generate header files
 		out.str("");
 		generate_header(type);
 		string header_dir = "include/" + subs(type->package->name, ".", "/") + "/";
 		string header_name = type->name + (p_iface ? "Support" : "") + ".hxx";
-		update(header_dir, header_name, out.str());
+		header_files.push_back(header_dir + header_name);
+		if(!cmake_only) {
+			update(header_dir, header_name, out.str());
+		}
 		
 		// generate source files
 		if(!is_template && !headers_only) {
@@ -74,7 +84,9 @@ public:
 			string source_dir = "src/" + subs(type->package->name, ".", "/") + "/";
 			string source_name = type->name + (p_iface ? "Support" : "") + ".cxx";
 			source_files.push_back(source_dir + source_name);
-			update(source_dir, source_name, out.str());
+			if(!cmake_only) {
+				update(source_dir, source_name, out.str());
+			}
 		}
 		
 		// generate client files
@@ -83,7 +95,10 @@ public:
 			generate_client(p_iface);
 			string header_dir = "include/" + subs(type->package->name, ".", "/") + "/";
 			string header_name = type->name + "Client.hxx";
-			update(header_dir, header_name, out.str());
+			header_files.push_back(header_dir + header_name);
+			if(!cmake_only) {
+				update(header_dir, header_name, out.str());
+			}
 		}
 	}
 	

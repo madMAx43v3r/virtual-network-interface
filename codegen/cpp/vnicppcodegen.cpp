@@ -27,9 +27,18 @@ int main(int argc, char** argv) {
 	
 	for(int i = 1; i < argc; ++i) {
 		if(argv[i][0] == '-') {
+			if(argv[i][1] == 'c') {
+				generator.cmake_only = true;
+				cout << "Option: cmake_only = true" << endl;
+			}
 			if(argv[i][1] == 'i') {
 				generator.headers_only = true;
 				cout << "Option: headers_only = true" << endl;
+			}
+			if(argv[i][1] == 'o') {
+				generator.output_dir = argv[i+1];
+				cout << "Option: output_dir = " << generator.output_dir << endl;
+				i++;
 			}
 			continue;
 		}

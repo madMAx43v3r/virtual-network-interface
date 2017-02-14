@@ -35,6 +35,10 @@ int main(int argc, char** argv) {
 				generator.headers_only = true;
 				cout << "Option: headers_only = true" << endl;
 			}
+			if(argv[i][1] == 'w') {
+				generator.overwrite = true;
+				cout << "Option: overwrite = true" << endl;
+			}
 			if(argv[i][1] == 'o') {
 				generator.output_dir = argv[i+1];
 				cout << "Option: output_dir = " << generator.output_dir << endl;

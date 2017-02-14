@@ -29,6 +29,8 @@ public:
 	string root = "generated/";
 	string output_dir = "";
 	
+	bool overwrite = false;
+	
 	set<string> whitelist;
 	
 	virtual ~Backend() {
@@ -76,7 +78,7 @@ public:
 			}
 		}
 		reader.close();
-		if(!same) {
+		if(!same || overwrite) {
 			cout << "UPDATE " << file_name << endl;
 			ofstream output(file_name, ios::trunc);
 			output << source;

@@ -39,6 +39,10 @@ int main(int argc, char** argv) {
 				generator.overwrite = true;
 				cout << "Option: overwrite = true" << endl;
 			}
+			if(argv[i][1] == 'x') {
+				generator.cleanup = true;
+				cout << "Option: cleanup = true" << endl;
+			}
 			if(argv[i][1] == 'o') {
 				generator.root = argv[i+1];
 				cout << "Option: root = " << generator.root << endl;

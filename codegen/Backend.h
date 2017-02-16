@@ -29,11 +29,14 @@ public:
 	string root = "generated/";
 	
 	bool overwrite = false;
+	bool cleanup = false;
 	
 	set<string> whitelist;
 	
 	virtual ~Backend() {
-		delete_old(root);
+		if(cleanup) {
+			delete_old(root);
+		}
 	}
 	
 	virtual void generate_all() {

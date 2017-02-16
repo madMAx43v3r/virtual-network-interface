@@ -53,7 +53,7 @@ public:
 				out << root << file << endl;
 			}
 			out << "$)" << endl << endl;
-			update("", "CMakeLists.cmake", out.str());
+			update("", "vni_input_output.cmake", out.str());
 		}
 	}
 	

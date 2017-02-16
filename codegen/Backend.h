@@ -27,7 +27,6 @@ std::string subs(std::string str, const std::string& from, const std::string& to
 class Backend {
 public:
 	string root = "generated/";
-	string output_dir = "";
 	
 	bool overwrite = false;
 	
@@ -56,7 +55,7 @@ public:
 	virtual void generate(Type* type) = 0;
 	
 	virtual void update(string path, string name, string content) {
-		path = output_dir + root + path;
+		path = root + path;
 		
 		string mkdir = "mkdir -p " + path;
 		if(system(mkdir.c_str())) {

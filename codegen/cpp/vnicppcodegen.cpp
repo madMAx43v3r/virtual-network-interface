@@ -40,8 +40,8 @@ int main(int argc, char** argv) {
 				cout << "Option: overwrite = true" << endl;
 			}
 			if(argv[i][1] == 'o') {
-				generator.output_dir = argv[i+1];
-				cout << "Option: output_dir = " << generator.output_dir << endl;
+				generator.root = argv[i+1];
+				cout << "Option: root = " << generator.root << endl;
 				i++;
 			}
 			continue;

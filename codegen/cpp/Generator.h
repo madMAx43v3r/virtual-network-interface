@@ -37,6 +37,12 @@ public:
 	virtual void generate_all() {
 		Backend::generate_all();
 		if(!headers_only) {
+			set<string> vni_files;
+			for(auto& entry : INDEX) {
+				if(entry.second && entry.second->file != "<unknown>") {
+					vni_files.insert(entry.second->file);
+				}
+			}
 			out.str("");
 			out << "set(VNI_INPUT_FILES@" << endl;
 			for(string file : vni_files) {
@@ -57,7 +63,6 @@ public:
 		}
 	}
 	
-	set<string> vni_files;
 	vector<string> header_files;
 	vector<string> source_files;
 	
@@ -65,7 +70,6 @@ public:
 		Interface* p_iface = dynamic_cast<Interface*>(type);
 		Object* p_object = dynamic_cast<Object*>(type);
 		is_template = p_iface && p_iface->generic.size();
-		vni_files.insert(type->file);
 		
 		// generate header files
 		out.str("");

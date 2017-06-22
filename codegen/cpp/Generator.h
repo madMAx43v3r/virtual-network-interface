@@ -590,7 +590,7 @@ public:
 				out << "{@" << endl;
 			}
 		} else if(p_struct || p_iface || p_enum) {
-			out << scope << base_name << "() {@" << endl;
+			out << header << scope << base_name << "() {@" << endl;
 		}
 		for(Field* field : fields) {
 			if(!field->value.empty()) {
